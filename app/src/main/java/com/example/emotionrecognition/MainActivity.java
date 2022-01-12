@@ -40,6 +40,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -109,10 +110,12 @@ public class MainActivity extends AppCompatActivity {
         // perform face detections
         faceDetector.detectMultiScale(img, detections);
 
+        int faces = 0;
         // draw rectangles on original color image
         for (Rect rect : detections.toArray()) {
             Imgproc.rectangle(source, new Point(rect.x, rect.y), new Point(rect.x + rect.width,
                     rect.y + rect.height), new Scalar(255, 0, 0, 0), 30);
+            faces = faces + 1;
         }
 
         // convert final Mat result with rectangles to Bitmap and display result
@@ -121,6 +124,10 @@ public class MainActivity extends AppCompatActivity {
         FinalResult = Bitmap.createBitmap(source.cols(), source.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(source, FinalResult);
         NewImageView.setImageBitmap(FinalResult);
+
+        String numFaces = faces + " faces were detected";
+        TextView textView = (TextView)findViewById(R.id.textView);
+        textView.setText(numFaces);
     }
 
     public void LoadGrayImage(View v) {
@@ -142,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
         // test classification method using grayscale image
         ClassifyEmotion(scaled_inputImage);
     }
-
 
     public void ClassifyEmotion (Bitmap detected_image) {
         try {
@@ -192,8 +198,11 @@ public class MainActivity extends AppCompatActivity {
             index++;
         }
 
-        System.out.println("The face is '" + labels.get(maxIndex) +
-                "' with classification " + "value of " + df.format(maxValue*100) + " %");
+        String finalResult = "The face is '" + labels.get(maxIndex) +
+                "' with classification " + "value of " + df.format(maxValue*100) + " %";
+
+        TextView textView = (TextView)findViewById(R.id.textView);
+        textView.setText(finalResult);
     }
 
 
