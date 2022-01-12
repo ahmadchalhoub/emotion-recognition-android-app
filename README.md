@@ -11,7 +11,7 @@ The seven different emotions that the CNN is trained for are the following:
 6. Surprise
 7. Neutral
 
-This is a custom trained model (steps for training shown in below link):
+This is a custom trained model (steps for training shown here):
 https://github.com/ahmadchalhoub/emotion-recognition-haar-cascade
 
 The trained model has the following metrics: 96.67% Training Accuracy | 53.64% Testing Accuracy
