@@ -161,34 +161,38 @@ public class MainActivity extends AppCompatActivity {
             // perform face detections
             faceDetector.detectMultiScale(img, detections);
 
-            // extract values for biggest detected face
-            double highestArea = Integer.MIN_VALUE;
-            int highestX = Integer.MIN_VALUE;
-            int highestY = Integer.MIN_VALUE;
-            int highestWidth = Integer.MIN_VALUE;
-            int highestHeight = Integer.MIN_VALUE;
-            for (Rect rect : detections.toArray()) {
-                if (rect.area() > highestArea) {
-                    highestArea = rect.area();
-                    highestX = rect.x;
-                    highestY = rect.y;
-                    highestWidth = rect.width;
-                    highestHeight = rect.height;
+            if (detections.empty()) {
+                textView.setText("No faces were detected in the image. Try again!");
+            } else {
+                // extract values for biggest detected face
+                double highestArea = Integer.MIN_VALUE;
+                int highestX = Integer.MIN_VALUE;
+                int highestY = Integer.MIN_VALUE;
+                int highestWidth = Integer.MIN_VALUE;
+                int highestHeight = Integer.MIN_VALUE;
+                for (Rect rect : detections.toArray()) {
+                    if (rect.area() > highestArea) {
+                        highestArea = rect.area();
+                        highestX = rect.x;
+                        highestY = rect.y;
+                        highestWidth = rect.width;
+                        highestHeight = rect.height;
+                    }
                 }
+
+                Rect rectCrop = new Rect(highestX, highestY, highestWidth, highestHeight);
+                Mat croppedImage = new Mat(img, rectCrop);
+
+                Bitmap croppedResult;
+                croppedResult = Bitmap.createBitmap(highestWidth, highestHeight,
+                        Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(croppedImage, croppedResult);
+                imageView.setImageBitmap(croppedResult);
+
+                Bitmap scaledResult = Bitmap.createScaledBitmap(croppedResult,
+                        48, 48, true);
+                ClassifyEmotion(scaledResult);
             }
-
-            Rect rectCrop = new Rect(highestX, highestY, highestWidth, highestHeight);
-            Mat croppedImage = new Mat(img, rectCrop);
-
-            Bitmap croppedResult;
-            croppedResult = Bitmap.createBitmap(highestWidth, highestHeight,
-                    Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(croppedImage, croppedResult);
-            imageView.setImageBitmap(croppedResult);
-
-            Bitmap scaledResult = Bitmap.createScaledBitmap(croppedResult,
-                    48, 48, true);
-            ClassifyEmotion(scaledResult);
     }
 
     public void ClassifyEmotion (Bitmap detected_image) {
