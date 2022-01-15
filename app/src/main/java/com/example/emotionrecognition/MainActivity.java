@@ -73,6 +73,17 @@ public class MainActivity extends AppCompatActivity {
     private Button captureButton;
     private ImageView imageView;
     private TextView textView;
+    private Button frontButton;
+    private Button backButton;
+
+    List<String> labels = Arrays.asList("Angry", "Disgust", "Fear", "Happy",
+            "Sad", "Surprise", "Neutral");
+
+    // default (initial) rotation angle for Bitmap returned
+    // by camera Intent is 90 (back camera). This is considering
+    // that the user didn't choose one of the two options
+    // provided for camera choice (front or back)
+    int rotationAngle = 90;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
         captureButton = findViewById(R.id.captureFrame);
         imageView = findViewById(R.id.imageView);
         textView = findViewById(R.id.textView);
+        frontButton = findViewById(R.id.frontButton);
+        backButton = findViewById(R.id.backButton);
 
         captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -100,12 +113,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
         if (requestCode == CAMERA_REQUEST) {
             if (data.equals(null)) {
                 System.out.println("Your data is = null");
             } else if (data != null) {
-                System.out.println("Your data is not = null");
                 Bitmap photo = (Bitmap) data.getExtras().get("data");
                 Bitmap rotatedPhoto = null;
                 rotatedPhoto = rotateBitmap(photo);
@@ -122,11 +133,26 @@ public class MainActivity extends AppCompatActivity {
     // to normal (vertical) orientation
     public Bitmap rotateBitmap(Bitmap bmp) {
         Matrix matrix = new Matrix();
-        matrix.postRotate(90);
+        matrix.postRotate(rotationAngle);
         Bitmap rotatedPhoto = null;
         rotatedPhoto = Bitmap.createBitmap(bmp, 0, 0,
                 bmp.getWidth(), bmp.getHeight(), matrix, true);
         return rotatedPhoto;
+    }
+
+    // determine which camera user wants to use (front/back) and
+    // set rotationAngle accordingly
+    public void selectCamera(View v) {
+        switch (v.getId()) {
+            case 2131230900:             // front camera selected
+                rotationAngle = 270;
+                textView.setText("You will be using the front camera.");
+                break;
+            case 2131230802:             // back camera selected
+                rotationAngle = 90;
+                textView.setText("You will be using the back camera.");
+                break;
+        }
     }
 
     // detect faces in image using Haar Cascade
@@ -138,11 +164,14 @@ public class MainActivity extends AppCompatActivity {
             Utils.bitmapToMat(bmp, source);
             Imgproc.cvtColor(source, img, Imgproc.COLOR_RGB2GRAY);
 
-            // read data from 'haarcascade_frontalface_default.xml' file found in 'res/raw/' directory and
-            // write data to an output file, cascadeFile, using InputStream and FileOutputStream
-            InputStream input_stream = getResources().openRawResource(R.raw.haarcascade_frontalface_default);
+            // read data from 'haarcascade_frontalface_default.xml' file
+            // found in 'res/raw/' directory and write data to an output
+            // file, cascadeFile, using InputStream and FileOutputStream
+            InputStream input_stream = getResources().openRawResource(
+                    R.raw.haarcascade_frontalface_default);
             File cascadeDir = getDir("haarcascade_frontalface_default", 0);
-            File cascadeFile = new File(cascadeDir, "haarcascade_frontalface_default.xml");
+            File cascadeFile = new File(
+                    cascadeDir, "haarcascade_frontalface_default.xml");
             FileOutputStream output_stream = new FileOutputStream(cascadeFile);
             byte[] buffer = new byte[4096];
             int bytesTransferred;
@@ -197,10 +226,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void ClassifyEmotion (Bitmap detected_image) {
         try {
-
-            List<String> labels = Arrays.asList("Angry", "Disgust", "Fear", "Happy",
-                    "Sad", "Surprise", "Neutral");
-
             MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(
                     this.getApplicationContext(), "emotion_cnn.tflite");
 
@@ -219,9 +244,7 @@ public class MainActivity extends AppCompatActivity {
             if(null != tflite){
                 tflite.run(newTensorImage.getBuffer(), probabilityBuffer.getBuffer());
             }
-
             getClassification(probabilityBuffer.getFloatArray(), labels);
-
         } catch (IOException e) {
             System.out.println("Image classification failed!");
         }
@@ -229,7 +252,6 @@ public class MainActivity extends AppCompatActivity {
 
     // print the biggest classification probability and its corresponding index
     private void getClassification(float[] floatArray, List<String> labels){
-
         DecimalFormat df = new DecimalFormat("0.00");
         float maxValue = Integer.MIN_VALUE;
         int maxIndex = 0;
@@ -243,9 +265,8 @@ public class MainActivity extends AppCompatActivity {
             index++;
         }
 
-        String finalResult = "The face is '" + labels.get(maxIndex) +
-                "' with classification " + "value of " + df.format(maxValue*100) + " %";
-
+        String finalResult = "The face is '" + labels.get(maxIndex) + "' with " +
+                "classification " + "value of " + df.format(maxValue*100) + " %";
         TextView textView = (TextView)findViewById(R.id.textView);
         textView.setText(finalResult);
     }
