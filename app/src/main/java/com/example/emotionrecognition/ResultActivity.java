@@ -3,6 +3,7 @@ package com.example.emotionrecognition;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -34,12 +35,12 @@ import java.util.List;
 
 public class ResultActivity extends MainActivity {
 
+    private static final int CAMERA_REQUEST = 100;
     List<String> labels = Arrays.asList("Angry", "Disgusted", "Afraid", "Happy",
             "Sad", "Surprised", "Neutral");
 
     private TextView resultText;
     private ImageView resultImage;
-    private Button backButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +49,7 @@ public class ResultActivity extends MainActivity {
 
         resultText = findViewById(R.id.resultText);
         resultImage = findViewById(R.id.resultImage);
-        backButton = findViewById(R.id.backButton);
+        Button tryAgain = findViewById(R.id.tryAgain);
 
         Intent resultIntent = getIntent();
         Bundle b = resultIntent.getExtras();
@@ -58,12 +59,30 @@ public class ResultActivity extends MainActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        tryAgain.setOnClickListener(v -> {
+            Intent open_camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            startActivityForResult(open_camera, 100);
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CAMERA_REQUEST) {
+            if (data != null) {
+                Bitmap photo = (Bitmap) data.getExtras().get("data");
+                Bitmap rotatedPhoto = rotateBitmap(photo);
+                Intent resultIntent = new Intent(this, ResultActivity.class);
+                resultIntent.putExtra("rotatedPhoto", rotatedPhoto);
+                startActivity(resultIntent);
+            }
+        }
     }
 
     public void returnToHome(View v) {
         Intent returnIntent = new Intent(ResultActivity.this, MainActivity.class);
         startActivity(returnIntent);
-
     }
 
     // detect faces in image using Haar Cascade
