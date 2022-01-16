@@ -3,7 +3,6 @@ package com.example.emotionrecognition;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -35,8 +34,8 @@ import java.util.List;
 
 public class ResultActivity extends MainActivity {
 
-    List<String> labels = Arrays.asList("Angry", "Disgust", "Fear", "Happy",
-            "Sad", "Surprise", "Neutral");
+    List<String> labels = Arrays.asList("Angry", "Disgusted", "Afraid", "Happy",
+            "Sad", "Surprised", "Neutral");
 
     private TextView resultText;
     private ImageView resultImage;

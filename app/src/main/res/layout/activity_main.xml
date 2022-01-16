@@ -17,13 +17,14 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/frontButton" />
+        app:layout_constraintTop_toBottomOf="@+id/frontButton"
+        app:layout_constraintVertical_bias="0.155" />
 
     <Button
         android:id="@+id/captureFrame"
         android:layout_width="184dp"
         android:layout_height="59dp"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="32dp"
         android:text="Open Camera"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -56,7 +57,7 @@
         android:id="@+id/welcomeText"
         android:layout_width="match_parent"
         android:layout_height="79dp"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="60dp"
         android:gravity="center"
         android:text="Welcome to the Emotion Recognition App!"
         android:textSize="18dp"
@@ -70,12 +71,13 @@
         android:id="@+id/selectCameraText"
         android:layout_width="313dp"
         android:layout_height="83dp"
-        android:layout_marginTop="180dp"
+        android:layout_marginTop="256dp"
         android:gravity="center"
         android:text="Please begin by choosing the camera that you want to use."
         android:textSize="18dp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.489"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -92,6 +94,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/chosenCamera"
         app:layout_constraintVertical_bias="0.577" />
+
+    <TextView
+        android:id="@+id/emotionsList"
+        android:layout_width="369dp"
+        android:layout_height="89dp"
+        android:gravity="center"
+        android:text="This app can detect any of the following seven emotions:\n\n
+Angry, Disgusted, Afraid, Happy, Sad, Surprised, Neutral"
+        app:layout_constraintBottom_toTopOf="@+id/selectCameraText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/welcomeText" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

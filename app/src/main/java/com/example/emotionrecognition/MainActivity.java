@@ -72,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
         captureButton.setOnClickListener(v -> {
             Intent open_camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             startActivityForResult(open_camera, 100);
-
         });
     }
 
