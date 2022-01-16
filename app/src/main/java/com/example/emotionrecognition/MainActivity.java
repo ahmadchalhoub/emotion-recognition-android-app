@@ -42,42 +42,14 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
-import org.opencv.core.*;
-import org.tensorflow.lite.DataType;
-import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.support.common.FileUtil;
-import org.tensorflow.lite.support.image.ImageProcessor;
-import org.tensorflow.lite.support.image.TensorImage;
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
-import org.tensorflow.lite.support.image.ops.TransformToGrayscaleOp;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.MappedByteBuffer;
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_REQUEST = 100;
-    private Button captureButton;
-    private ImageView imageView;
-    private TextView textView;
-    private Button frontButton;
-    private Button backButton;
-
-    List<String> labels = Arrays.asList("Angry", "Disgust", "Fear", "Happy",
-            "Sad", "Surprise", "Neutral");
+    private TextView chosenCamera;
 
     // default (initial) rotation angle for Bitmap returned
     // by camera Intent is 90 (back camera). This is considering
@@ -94,19 +66,13 @@ public class MainActivity extends AppCompatActivity {
         boolean succesful_import = OpenCVLoader.initDebug();
         Log.d("OpenCVstatus", "Value: " + succesful_import);
 
-        captureButton = findViewById(R.id.captureFrame);
-        imageView = findViewById(R.id.imageView);
-        textView = findViewById(R.id.textView);
-        frontButton = findViewById(R.id.frontButton);
-        backButton = findViewById(R.id.backButton);
+        Button captureButton = findViewById(R.id.captureFrame);
+        chosenCamera = findViewById(R.id.chosenCamera);
 
-        captureButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent open_camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivityForResult(open_camera, 100);
+        captureButton.setOnClickListener(v -> {
+            Intent open_camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            startActivityForResult(open_camera, 100);
 
-            }
         });
     }
 
@@ -114,17 +80,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CAMERA_REQUEST) {
-            if (data.equals(null)) {
-                System.out.println("Your data is = null");
-            } else if (data != null) {
+            if (data != null) {
                 Bitmap photo = (Bitmap) data.getExtras().get("data");
-                Bitmap rotatedPhoto = null;
-                rotatedPhoto = rotateBitmap(photo);
-                try {
-                    DetectFace(rotatedPhoto);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                Bitmap rotatedPhoto = rotateBitmap(photo);
+                Intent resultIntent = new Intent(MainActivity.this, ResultActivity.class);
+                resultIntent.putExtra("rotatedPhoto", rotatedPhoto);
+                startActivity(resultIntent);
             }
         }
     }
@@ -134,140 +95,24 @@ public class MainActivity extends AppCompatActivity {
     public Bitmap rotateBitmap(Bitmap bmp) {
         Matrix matrix = new Matrix();
         matrix.postRotate(rotationAngle);
-        Bitmap rotatedPhoto = null;
-        rotatedPhoto = Bitmap.createBitmap(bmp, 0, 0,
+        return Bitmap.createBitmap(bmp, 0, 0,
                 bmp.getWidth(), bmp.getHeight(), matrix, true);
-        return rotatedPhoto;
     }
 
     // determine which camera user wants to use (front/back) and
     // set rotationAngle accordingly
     public void selectCamera(View v) {
-        switch (v.getId()) {
-            case 2131230900:             // front camera selected
+        Button b = (Button)v;
+        String textButton = b.getText().toString();
+        switch (textButton) {
+            case "Front Camera":             // front camera selected
                 rotationAngle = 270;
-                textView.setText("You will be using the front camera.");
+                chosenCamera.setText("You will be using the front camera.");
                 break;
-            case 2131230802:             // back camera selected
+            case "Back Camera":             // back camera selected
                 rotationAngle = 90;
-                textView.setText("You will be using the back camera.");
+                chosenCamera.setText("You will be using the back camera.");
                 break;
         }
-    }
-
-    // detect faces in image using Haar Cascade
-    public void DetectFace(Bitmap bmp) throws IOException {
-
-            imageView.setImageBitmap(bmp);
-            Mat source = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC4);
-            Mat img = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC1);
-            Utils.bitmapToMat(bmp, source);
-            Imgproc.cvtColor(source, img, Imgproc.COLOR_RGB2GRAY);
-
-            // read data from 'haarcascade_frontalface_default.xml' file
-            // found in 'res/raw/' directory and write data to an output
-            // file, cascadeFile, using InputStream and FileOutputStream
-            InputStream input_stream = getResources().openRawResource(
-                    R.raw.haarcascade_frontalface_default);
-            File cascadeDir = getDir("haarcascade_frontalface_default", 0);
-            File cascadeFile = new File(
-                    cascadeDir, "haarcascade_frontalface_default.xml");
-            FileOutputStream output_stream = new FileOutputStream(cascadeFile);
-            byte[] buffer = new byte[4096];
-            int bytesTransferred;
-            while ((bytesTransferred = input_stream.read(buffer)) != -1) {
-                output_stream.write(buffer, 0, bytesTransferred);
-            }
-            input_stream.close();
-            output_stream.close();
-
-            // declare CascadeClassifier object using absolute
-            // path of newly created XML file
-            CascadeClassifier faceDetector = new CascadeClassifier(
-                    cascadeFile.getAbsolutePath());
-            MatOfRect detections = new MatOfRect();
-
-            // perform face detections
-            faceDetector.detectMultiScale(img, detections);
-
-            if (detections.empty()) {
-                textView.setText("No faces were detected in the image. Try again!");
-            } else {
-                // extract values for biggest detected face
-                double highestArea = Integer.MIN_VALUE;
-                int highestX = Integer.MIN_VALUE;
-                int highestY = Integer.MIN_VALUE;
-                int highestWidth = Integer.MIN_VALUE;
-                int highestHeight = Integer.MIN_VALUE;
-                for (Rect rect : detections.toArray()) {
-                    if (rect.area() > highestArea) {
-                        highestArea = rect.area();
-                        highestX = rect.x;
-                        highestY = rect.y;
-                        highestWidth = rect.width;
-                        highestHeight = rect.height;
-                    }
-                }
-
-                Rect rectCrop = new Rect(highestX, highestY, highestWidth, highestHeight);
-                Mat croppedImage = new Mat(img, rectCrop);
-
-                Bitmap croppedResult;
-                croppedResult = Bitmap.createBitmap(highestWidth, highestHeight,
-                        Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(croppedImage, croppedResult);
-                imageView.setImageBitmap(croppedResult);
-
-                Bitmap scaledResult = Bitmap.createScaledBitmap(croppedResult,
-                        48, 48, true);
-                ClassifyEmotion(scaledResult);
-            }
-    }
-
-    public void ClassifyEmotion (Bitmap detected_image) {
-        try {
-            MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(
-                    this.getApplicationContext(), "emotion_cnn.tflite");
-
-            Interpreter tflite = new Interpreter(tfliteModel);
-
-            ImageProcessor imageProcessor = new ImageProcessor.Builder()
-                    .add(new TransformToGrayscaleOp())
-                    .build();
-
-            TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
-            tensorImage.load(detected_image);
-            TensorImage newTensorImage = imageProcessor.process(tensorImage);
-            TensorBuffer probabilityBuffer = TensorBuffer.createFixedSize(
-                    new int[]{1, 7}, DataType.FLOAT32);
-
-            if(null != tflite){
-                tflite.run(newTensorImage.getBuffer(), probabilityBuffer.getBuffer());
-            }
-            getClassification(probabilityBuffer.getFloatArray(), labels);
-        } catch (IOException e) {
-            System.out.println("Image classification failed!");
-        }
-    }
-
-    // print the biggest classification probability and its corresponding index
-    private void getClassification(float[] floatArray, List<String> labels){
-        DecimalFormat df = new DecimalFormat("0.00");
-        float maxValue = Integer.MIN_VALUE;
-        int maxIndex = 0;
-
-        int index = 0;
-        while( index < floatArray.length ) {
-            if( maxValue < floatArray[index] ) {
-                maxValue = floatArray[index];
-                maxIndex = index;
-            }
-            index++;
-        }
-
-        String finalResult = "The face is '" + labels.get(maxIndex) + "' with " +
-                "classification " + "value of " + df.format(maxValue*100) + " %";
-        TextView textView = (TextView)findViewById(R.id.textView);
-        textView.setText(finalResult);
     }
 }
