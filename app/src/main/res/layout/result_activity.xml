@@ -33,6 +33,7 @@
         android:layout_width="213dp"
         android:layout_height="50dp"
         android:text="Return to Main Page"
+        android:onClick="returnToHome"
         app:layout_constraintBottom_toTopOf="@+id/resultImage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

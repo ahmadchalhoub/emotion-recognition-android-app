@@ -3,6 +3,9 @@ package com.example.emotionrecognition;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -37,6 +40,7 @@ public class ResultActivity extends MainActivity {
 
     private TextView resultText;
     private ImageView resultImage;
+    private Button backButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +49,7 @@ public class ResultActivity extends MainActivity {
 
         resultText = findViewById(R.id.resultText);
         resultImage = findViewById(R.id.resultImage);
+        backButton = findViewById(R.id.backButton);
 
         Intent resultIntent = getIntent();
         Bundle b = resultIntent.getExtras();
@@ -54,6 +59,11 @@ public class ResultActivity extends MainActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void returnToHome(View v) {
+        Intent returnIntent = new Intent(ResultActivity.this, MainActivity.class);
+        startActivity(returnIntent);
 
     }
 
