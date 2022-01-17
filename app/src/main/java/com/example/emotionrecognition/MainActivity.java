@@ -89,6 +89,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void openCameraX(View v) {
+        Intent returnIntent = new Intent(this, CameraXActivity.class);
+        startActivity(returnIntent);
+    }
+
     // rotate the Bitmap returned by camera Intent
     // to normal (vertical) orientation
     public Bitmap rotateBitmap(Bitmap bmp) {

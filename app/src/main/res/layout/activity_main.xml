@@ -18,17 +18,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/frontButton"
-        app:layout_constraintVertical_bias="0.155" />
+        app:layout_constraintVertical_bias="0.389" />
 
     <Button
         android:id="@+id/captureFrame"
         android:layout_width="184dp"
         android:layout_height="59dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="48dp"
         android:text="Open Camera"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintHorizontal_bias="0.176"
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
@@ -93,7 +93,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/chosenCamera"
-        app:layout_constraintVertical_bias="0.577" />
+        app:layout_constraintVertical_bias="0.478" />
 
     <TextView
         android:id="@+id/emotionsList"
@@ -106,6 +106,19 @@ Angry, Disgusted, Afraid, Happy, Sad, Surprised, Neutral"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/welcomeText" />
+
+    <Button
+        android:id="@+id/cameraxButton"
+        android:layout_width="125dp"
+        android:layout_height="61dp"
+        android:onClick="openCameraX"
+        android:text="CameraX"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.548"
+        app:layout_constraintStart_toEndOf="@+id/captureFrame"
+        app:layout_constraintTop_toBottomOf="@+id/continueText"
+        app:layout_constraintVertical_bias="0.434" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
