@@ -15,3 +15,6 @@ This is a custom trained model (steps for training shown here):
 https://github.com/ahmadchalhoub/emotion-recognition-haar-cascade
 
 The trained model has the following metrics: 96.67% Training Accuracy | 53.64% Testing Accuracy
+
+Once the basic infrastructure for the application is done and usability is good, the CNN will be retrained 
+for a higher testing accuracy (better generalization) so that the user has a better experience. 
