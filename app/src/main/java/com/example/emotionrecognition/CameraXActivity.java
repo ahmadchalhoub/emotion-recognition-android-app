@@ -24,7 +24,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.concurrent.ExecutionException;
 
-
 // display Camera preview in app
 // CameraX Preview setup was obtained from:
 // https://developer.android.com/training/camerax/preview

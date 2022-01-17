@@ -62,10 +62,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // check that OpenCV has been properly imported
-        boolean succesful_import = OpenCVLoader.initDebug();
-        Log.d("OpenCVstatus", "Value: " + succesful_import);
-
         Button captureButton = findViewById(R.id.captureFrame);
         chosenCamera = findViewById(R.id.chosenCamera);
 
