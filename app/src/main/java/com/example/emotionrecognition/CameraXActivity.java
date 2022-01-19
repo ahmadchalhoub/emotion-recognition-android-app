@@ -49,10 +49,7 @@ import org.tensorflow.lite.support.image.ops.TransformToGrayscaleOp;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.text.DecimalFormat;
@@ -65,8 +62,10 @@ import java.util.concurrent.ExecutionException;
 // https://developer.android.com/training/camerax/preview
 public class CameraXActivity extends MainActivity {
 
+    // list of classes the trained CNN can detect
     List<String> labels = Arrays.asList("Angry", "Disgusted", "Afraid", "Happy",
             "Sad", "Surprised", "Neutral");
+
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private PreviewView previewView;
     private TextView cameraXText;
@@ -118,8 +117,8 @@ public class CameraXActivity extends MainActivity {
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
 
-        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), new ImageAnalysis.Analyzer() {
-            Bitmap bmp = null;
+        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this),
+                new ImageAnalysis.Analyzer() {
 
             @Override
             public void analyze(@NonNull ImageProxy imageProxy) {
@@ -129,15 +128,13 @@ public class CameraXActivity extends MainActivity {
                 firstBuffer.rewind();
                 byte[] firstBytes = new byte[firstBuffer.remaining()];
                 firstBuffer.get(firstBytes);
-                System.out.println("First Buffer Length = " + firstBytes.length);
-                System.out.println("bytes[]: " + Arrays.toString(firstBytes));
 
                 //Create bitmap with width, height, and 4 bytes color (RGBA)
-                Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
+                Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
+                        Bitmap.Config.ARGB_8888);
                 ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
                 bmp.copyPixelsFromBuffer(buffer);
-                Bitmap rotatedBMP = null;
-                rotatedBMP = rotateBitmap(bmp);
+                Bitmap rotatedBMP = rotateBitmap(bmp);
                 try {
                     DetectFace(rotatedBMP);
                 } catch (IOException e) {
@@ -148,7 +145,8 @@ public class CameraXActivity extends MainActivity {
         });
 
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
-        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, preview);
+        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector,
+                imageAnalysis, preview);
     }
 
     // detect faces in image using Haar Cascade
@@ -223,6 +221,8 @@ public class CameraXActivity extends MainActivity {
                 bmp.getWidth(), bmp.getHeight(), matrix, true);
     }
 
+    // perform classification on detected face using the
+    // custom trained CNN
     public void ClassifyEmotion (Bitmap detected_image) {
         try {
             MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(
@@ -266,7 +266,6 @@ public class CameraXActivity extends MainActivity {
         cameraXText.setText(finalResult);
     }
 
-
     // onClick function to allow user to return to MainActivity
     public void returnToHome(View v) {
         Intent returnIntent = new Intent(this, MainActivity.class);
@@ -288,6 +287,4 @@ public class CameraXActivity extends MainActivity {
         }
         return true;
     }
-
-
 }

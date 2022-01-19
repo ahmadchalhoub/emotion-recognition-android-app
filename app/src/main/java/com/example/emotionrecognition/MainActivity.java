@@ -35,101 +35,39 @@ package com.example.emotionrecognition;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
-
-import org.opencv.android.OpenCVLoader;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
-
-    private static final int CAMERA_REQUEST = 100;
-    private TextView chosenCamera;
     public File newCascadeFile;
-
-    // default (initial) rotation angle for Bitmap returned
-    // by camera Intent is 90 (back camera). This is considering
-    // that the user didn't choose one of the two options
-    // provided for camera choice (front or back)
-    int rotationAngle = 90;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button captureButton = findViewById(R.id.captureFrame);
-        chosenCamera = findViewById(R.id.chosenCamera);
-
+        // initialize Haar Cascade file
         try {
             initializeCascadeFile();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        captureButton.setOnClickListener(v -> {
-            Intent open_camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            startActivityForResult(open_camera, 100);
-        });
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CAMERA_REQUEST) {
-            if (data != null) {
-                Bitmap photo = (Bitmap) data.getExtras().get("data");
-                Bitmap rotatedPhoto = rotateBitmap(photo);
-                Intent resultIntent = new Intent(MainActivity.this, ResultActivity.class);
-                resultIntent.putExtra("rotatedPhoto", rotatedPhoto);
-                startActivity(resultIntent);
-            }
-        }
-    }
-
+    // open CameraXActivity to perform and view emotion recognition
     public void openCameraX(View v) {
         Intent returnIntent = new Intent(this, CameraXActivity.class);
         returnIntent.putExtra("cascadeFile", newCascadeFile);
         startActivity(returnIntent);
     }
 
-    // rotate the Bitmap returned by camera Intent
-    // to normal (vertical) orientation
-    public Bitmap rotateBitmap(Bitmap bmp) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(rotationAngle);
-        return Bitmap.createBitmap(bmp, 0, 0,
-                bmp.getWidth(), bmp.getHeight(), matrix, true);
-    }
-
-    // determine which camera user wants to use (front/back) and
-    // set rotationAngle accordingly
-    public void selectCamera(View v) {
-        Button b = (Button)v;
-        String textButton = b.getText().toString();
-        switch (textButton) {
-            case "Front Camera":             // front camera selected
-                rotationAngle = 270;
-                chosenCamera.setText("You will be using the front camera.");
-                break;
-            case "Back Camera":             // back camera selected
-                rotationAngle = 90;
-                chosenCamera.setText("You will be using the back camera.");
-                break;
-        }
-    }
-
+    // initialize the Haar Cascade file once
     public void initializeCascadeFile() throws IOException {
+
         // read data from 'haarcascade_frontalface_default.xml' file
         // found in 'res/raw/' directory and write data to an output
         // file, cascadeFile, using InputStream and FileOutputStream

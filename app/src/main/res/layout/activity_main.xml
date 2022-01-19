@@ -7,53 +7,6 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/chosenCamera"
-        android:layout_width="283dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="43dp"
-        android:layout_marginBottom="264dp"
-        android:gravity="center"
-        android:shadowColor="@color/black"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/frontButton"
-        app:layout_constraintVertical_bias="0.389" />
-
-    <Button
-        android:id="@+id/captureFrame"
-        android:layout_width="184dp"
-        android:layout_height="59dp"
-        android:layout_marginBottom="48dp"
-        android:text="Open Camera"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.176"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/frontButton"
-        android:layout_width="168dp"
-        android:layout_height="68dp"
-        android:layout_marginStart="28dp"
-        android:layout_marginTop="44dp"
-        android:onClick="selectCamera"
-        android:text="Front Camera"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/selectCameraText" />
-
-    <Button
-        android:id="@+id/backButton"
-        android:layout_width="168dp"
-        android:layout_height="68dp"
-        android:layout_marginTop="44dp"
-        android:layout_marginEnd="28dp"
-        android:onClick="selectCamera"
-        android:text="Back Camera"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/selectCameraText" />
-
-    <TextView
         android:id="@+id/welcomeText"
         android:layout_width="match_parent"
         android:layout_height="79dp"
@@ -68,41 +21,26 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/selectCameraText"
-        android:layout_width="313dp"
-        android:layout_height="83dp"
-        android:layout_marginTop="256dp"
-        android:gravity="center"
-        android:text="Please begin by choosing the camera that you want to use."
-        android:textSize="18dp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.489"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
         android:id="@+id/continueText"
         android:layout_width="315dp"
         android:layout_height="64dp"
+        android:layout_marginTop="88dp"
         android:gravity="center"
         android:text="You can continue by pressing the button below!"
         android:textSize="18dp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/captureFrame"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/chosenCamera"
-        app:layout_constraintVertical_bias="0.478" />
+        app:layout_constraintTop_toBottomOf="@+id/emotionsList" />
 
     <TextView
         android:id="@+id/emotionsList"
         android:layout_width="369dp"
         android:layout_height="89dp"
+        android:layout_marginTop="104dp"
         android:gravity="center"
         android:text="This app can detect any of the following seven emotions:\n\n
 Angry, Disgusted, Afraid, Happy, Sad, Surprised, Neutral"
-        app:layout_constraintBottom_toTopOf="@+id/selectCameraText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/welcomeText" />
@@ -112,13 +50,11 @@ Angry, Disgusted, Afraid, Happy, Sad, Surprised, Neutral"
         android:layout_width="125dp"
         android:layout_height="61dp"
         android:onClick="openCameraX"
-        android:text="CameraX"
+        android:text="Begin!"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.548"
-        app:layout_constraintStart_toEndOf="@+id/captureFrame"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/continueText"
-        app:layout_constraintVertical_bias="0.434" />
-
+        app:layout_constraintVertical_bias="0.301" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
