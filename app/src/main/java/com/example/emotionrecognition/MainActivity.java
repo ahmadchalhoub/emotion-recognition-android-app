@@ -46,10 +46,16 @@ import android.widget.TextView;
 
 import org.opencv.android.OpenCVLoader;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_REQUEST = 100;
     private TextView chosenCamera;
+    public File newCascadeFile;
 
     // default (initial) rotation angle for Bitmap returned
     // by camera Intent is 90 (back camera). This is considering
@@ -64,6 +70,12 @@ public class MainActivity extends AppCompatActivity {
 
         Button captureButton = findViewById(R.id.captureFrame);
         chosenCamera = findViewById(R.id.chosenCamera);
+
+        try {
+            initializeCascadeFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         captureButton.setOnClickListener(v -> {
             Intent open_camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -87,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void openCameraX(View v) {
         Intent returnIntent = new Intent(this, CameraXActivity.class);
+        returnIntent.putExtra("cascadeFile", newCascadeFile);
         startActivity(returnIntent);
     }
 
@@ -114,5 +127,24 @@ public class MainActivity extends AppCompatActivity {
                 chosenCamera.setText("You will be using the back camera.");
                 break;
         }
+    }
+
+    public void initializeCascadeFile() throws IOException {
+        // read data from 'haarcascade_frontalface_default.xml' file
+        // found in 'res/raw/' directory and write data to an output
+        // file, cascadeFile, using InputStream and FileOutputStream
+        InputStream input_stream = getResources().openRawResource(
+                R.raw.haarcascade_frontalface_default);
+        File cascadeDir = getDir("haarcascade_frontalface_default", 0);
+        newCascadeFile = new File(
+                cascadeDir, "haarcascade_frontalface_default.xml");
+        FileOutputStream output_stream = new FileOutputStream(newCascadeFile);
+        byte[] buffer = new byte[4096];
+        int bytesTransferred;
+        while ((bytesTransferred = input_stream.read(buffer)) != -1) {
+            output_stream.write(buffer, 0, bytesTransferred);
+        }
+        input_stream.close();
+        output_stream.close();
     }
 }

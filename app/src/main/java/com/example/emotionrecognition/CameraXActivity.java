@@ -49,6 +49,7 @@ import org.tensorflow.lite.support.image.ops.TransformToGrayscaleOp;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,6 +71,7 @@ public class CameraXActivity extends MainActivity {
     private PreviewView previewView;
     private TextView cameraXText;
     private ImageView imageView;
+    private File newCascadeFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +83,9 @@ public class CameraXActivity extends MainActivity {
         previewView = findViewById(R.id.previewView);
         cameraXText = findViewById(R.id.cameraXText);
         imageView = findViewById(R.id.resultImage);
+
+        Intent intent = getIntent();
+        newCascadeFile = (File)intent.getExtras().get("cascadeFile");
 
         // request a ProcessCameraProvider
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
@@ -94,8 +99,6 @@ public class CameraXActivity extends MainActivity {
                 } catch (ExecutionException | InterruptedException e) {
                 }
         }, ContextCompat.getMainExecutor(this));
-
-
     }
 
     // select a camera and bind the lifecycle and use cases
@@ -117,6 +120,7 @@ public class CameraXActivity extends MainActivity {
 
         imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), new ImageAnalysis.Analyzer() {
             Bitmap bmp = null;
+
             @Override
             public void analyze(@NonNull ImageProxy imageProxy) {
                 @SuppressLint("UnsafeOptInUsageError") Image image = imageProxy.getImage();
@@ -150,31 +154,15 @@ public class CameraXActivity extends MainActivity {
     // detect faces in image using Haar Cascade
     public void DetectFace(Bitmap bmp) throws IOException {
         Mat source = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC4);
+        Mat newSource = source;
         Mat img = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC1);
         Utils.bitmapToMat(bmp, source);
         Imgproc.cvtColor(source, img, Imgproc.COLOR_RGB2GRAY);
 
-        // read data from 'haarcascade_frontalface_default.xml' file
-        // found in 'res/raw/' directory and write data to an output
-        // file, cascadeFile, using InputStream and FileOutputStream
-        InputStream input_stream = getResources().openRawResource(
-                R.raw.haarcascade_frontalface_default);
-        File cascadeDir = getDir("haarcascade_frontalface_default", 0);
-        File cascadeFile = new File(
-                cascadeDir, "haarcascade_frontalface_default.xml");
-        FileOutputStream output_stream = new FileOutputStream(cascadeFile);
-        byte[] buffer = new byte[4096];
-        int bytesTransferred;
-        while ((bytesTransferred = input_stream.read(buffer)) != -1) {
-            output_stream.write(buffer, 0, bytesTransferred);
-        }
-        input_stream.close();
-        output_stream.close();
-
         // declare CascadeClassifier object using absolute
         // path of newly created XML file
         CascadeClassifier faceDetector = new CascadeClassifier(
-                cascadeFile.getAbsolutePath());
+                newCascadeFile.getAbsolutePath());
         MatOfRect detections = new MatOfRect();
 
         // perform face detections
@@ -204,17 +192,25 @@ public class CameraXActivity extends MainActivity {
                 }
             }
 
-            Imgproc.rectangle(source, new Point(highestX, highestY), new Point(highestX +
+            Rect rectCrop = new Rect(highestX, highestY, highestWidth, highestHeight);
+            Mat croppedImage = new Mat(source, rectCrop);
+
+            Imgproc.rectangle(newSource, new Point(highestX, highestY), new Point(highestX +
                             highestWidth, highestY + highestHeight), new Scalar(0, 255, 0));
 
             Bitmap bitmapResult;
-            bitmapResult = Bitmap.createBitmap(bmp.getWidth(), bmp.getHeight(),
+            bitmapResult = Bitmap.createBitmap(highestWidth, highestHeight,
                     Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(source, bitmapResult);
+
+            Bitmap originalImage = Bitmap.createBitmap(newSource.width(), newSource.height(),
+                    Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(newSource, originalImage);
+
+            Utils.matToBitmap(croppedImage, bitmapResult);
             Bitmap scaledResult = Bitmap.createScaledBitmap(bitmapResult,
                     48, 48, true);
             ClassifyEmotion(scaledResult);
-            imageView.setImageBitmap(bitmapResult);
+            imageView.setImageBitmap(originalImage);
         }
     }
 
@@ -237,7 +233,6 @@ public class CameraXActivity extends MainActivity {
             ImageProcessor imageProcessor = new ImageProcessor.Builder()
                     .add(new TransformToGrayscaleOp())
                     .build();
-
             TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
             tensorImage.load(detected_image);
             TensorImage newTensorImage = imageProcessor.process(tensorImage);
