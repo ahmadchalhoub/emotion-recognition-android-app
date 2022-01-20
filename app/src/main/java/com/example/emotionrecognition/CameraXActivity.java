@@ -19,14 +19,12 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.view.PreviewView;
 
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -71,6 +69,8 @@ public class CameraXActivity extends MainActivity {
     private TextView cameraXText;
     private ImageView imageView;
     private File newCascadeFile;
+    private Boolean cameraChosen;
+    private int rotationAngle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +85,14 @@ public class CameraXActivity extends MainActivity {
 
         Intent intent = getIntent();
         newCascadeFile = (File)intent.getExtras().get("cascadeFile");
+        String previousActivity = (String) intent.getExtras().get("from");
+
+        if (previousActivity.equals("MainActivity")) {
+            cameraChosen = true;
+        } else {
+            Boolean newCameraChosen = (Boolean)intent.getExtras().get("cameraChosen");
+            cameraChosen = !newCameraChosen;
+        }
 
         // request a ProcessCameraProvider
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
@@ -95,7 +103,7 @@ public class CameraXActivity extends MainActivity {
                 try {
                     ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
                     bindPreview(cameraProvider);
-                } catch (ExecutionException | InterruptedException e) {
+                } catch (ExecutionException | InterruptedException ignored) {
                 }
         }, ContextCompat.getMainExecutor(this));
     }
@@ -106,9 +114,20 @@ public class CameraXActivity extends MainActivity {
         Preview preview = new Preview.Builder()
                 .build();
 
-        CameraSelector cameraSelector = new CameraSelector.Builder()
-                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-                .build();
+        CameraSelector cameraSelector;
+
+        if (cameraChosen) {
+            cameraSelector = new CameraSelector.Builder()
+                    .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                    .build();
+            rotationAngle = 90;
+        } else {
+            cameraSelector = new CameraSelector.Builder()
+                    .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
+                    .build();
+            rotationAngle = 270;
+        }
+
 
         ImageAnalysis imageAnalysis =
                 new ImageAnalysis.Builder()
@@ -118,41 +137,37 @@ public class CameraXActivity extends MainActivity {
                         .build();
 
         imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this),
-                new ImageAnalysis.Analyzer() {
+                imageProxy -> {
+                    @SuppressLint("UnsafeOptInUsageError") Image image = imageProxy.getImage();
 
-            @Override
-            public void analyze(@NonNull ImageProxy imageProxy) {
-                @SuppressLint("UnsafeOptInUsageError") Image image = imageProxy.getImage();
+                    assert image != null;
+                    ByteBuffer firstBuffer = image.getPlanes()[0].getBuffer();
+                    firstBuffer.rewind();
+                    byte[] firstBytes = new byte[firstBuffer.remaining()];
+                    firstBuffer.get(firstBytes);
 
-                ByteBuffer firstBuffer = image.getPlanes()[0].getBuffer();
-                firstBuffer.rewind();
-                byte[] firstBytes = new byte[firstBuffer.remaining()];
-                firstBuffer.get(firstBytes);
-
-                //Create bitmap with width, height, and 4 bytes color (RGBA)
-                Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
-                        Bitmap.Config.ARGB_8888);
-                ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
-                bmp.copyPixelsFromBuffer(buffer);
-                Bitmap rotatedBMP = rotateBitmap(bmp);
-                try {
-                    DetectFace(rotatedBMP);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                imageProxy.close();
-            }
-        });
+                    //Create bitmap with width, height, and 4 bytes color (RGBA)
+                    Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
+                            Bitmap.Config.ARGB_8888);
+                    ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
+                    bmp.copyPixelsFromBuffer(buffer);
+                    Bitmap rotatedBMP = rotateBitmap(bmp);
+                    try {
+                        DetectFace(rotatedBMP);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    imageProxy.close();
+                });
 
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
-        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector,
+        cameraProvider.bindToLifecycle(this, cameraSelector,
                 imageAnalysis, preview);
     }
 
     // detect faces in image using Haar Cascade
     public void DetectFace(Bitmap bmp) throws IOException {
         Mat source = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC4);
-        Mat newSource = source;
         Mat img = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC1);
         Utils.bitmapToMat(bmp, source);
         Imgproc.cvtColor(source, img, Imgproc.COLOR_RGB2GRAY);
@@ -193,16 +208,16 @@ public class CameraXActivity extends MainActivity {
             Rect rectCrop = new Rect(highestX, highestY, highestWidth, highestHeight);
             Mat croppedImage = new Mat(source, rectCrop);
 
-            Imgproc.rectangle(newSource, new Point(highestX, highestY), new Point(highestX +
+            Imgproc.rectangle(source, new Point(highestX, highestY), new Point(highestX +
                             highestWidth, highestY + highestHeight), new Scalar(0, 255, 0));
 
             Bitmap bitmapResult;
             bitmapResult = Bitmap.createBitmap(highestWidth, highestHeight,
                     Bitmap.Config.ARGB_8888);
 
-            Bitmap originalImage = Bitmap.createBitmap(newSource.width(), newSource.height(),
+            Bitmap originalImage = Bitmap.createBitmap(source.width(), source.height(),
                     Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(newSource, originalImage);
+            Utils.matToBitmap(source, originalImage);
 
             Utils.matToBitmap(croppedImage, bitmapResult);
             Bitmap scaledResult = Bitmap.createScaledBitmap(bitmapResult,
@@ -216,7 +231,7 @@ public class CameraXActivity extends MainActivity {
     // to normal (vertical) orientation
     public Bitmap rotateBitmap(Bitmap bmp) {
         Matrix matrix = new Matrix();
-        matrix.postRotate(90);
+        matrix.postRotate(rotationAngle);
         return Bitmap.createBitmap(bmp, 0, 0,
                 bmp.getWidth(), bmp.getHeight(), matrix, true);
     }
@@ -270,6 +285,14 @@ public class CameraXActivity extends MainActivity {
     public void returnToHome(View v) {
         Intent returnIntent = new Intent(this, MainActivity.class);
         startActivity(returnIntent);
+    }
+
+    public void flipCamera(View v) {
+        Intent intent = getIntent();
+        intent.putExtra("from", "CameraXActivity");
+        intent.putExtra("cameraChosen", cameraChosen);
+        finish();
+        startActivity(intent);
     }
 
     // this function was obtained from (with slight changes from me):

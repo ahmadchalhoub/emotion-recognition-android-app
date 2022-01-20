@@ -23,16 +23,17 @@
 
     <Button
         android:id="@+id/returnButton"
-        android:layout_width="213dp"
-        android:layout_height="50dp"
+        android:layout_width="124dp"
+        android:layout_height="57dp"
         android:layout_marginBottom="15dp"
         android:onClick="returnToHome"
-        android:text="Return to Main Page"
+        android:text="Home"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.212"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/container"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintVertical_bias="0.985" />
 
     <TextView
         android:id="@+id/cameraXText"
@@ -46,5 +47,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/container"
         app:layout_constraintVertical_bias="0.609" />
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="124dp"
+        android:layout_height="57dp"
+        android:layout_marginBottom="15dp"
+        android:onClick="flipCamera"
+        android:text="Flip"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.392"
+        app:layout_constraintStart_toEndOf="@+id/returnButton"
+        app:layout_constraintTop_toBottomOf="@+id/cameraXText"
+        app:layout_constraintVertical_bias="0.923" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

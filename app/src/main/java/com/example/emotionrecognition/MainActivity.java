@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     public void openCameraX(View v) {
         Intent returnIntent = new Intent(this, CameraXActivity.class);
         returnIntent.putExtra("cascadeFile", newCascadeFile);
+        returnIntent.putExtra("from", "MainActivity");
         startActivity(returnIntent);
     }
 
