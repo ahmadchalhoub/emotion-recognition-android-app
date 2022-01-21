@@ -69,7 +69,7 @@ public class CameraXActivity extends MainActivity {
     private TextView cameraXText;
     private ImageView imageView;
     private File newCascadeFile;
-    private Boolean cameraChosen;
+    private Boolean frontCamera;
     private int rotationAngle;
 
     @Override
@@ -87,11 +87,14 @@ public class CameraXActivity extends MainActivity {
         newCascadeFile = (File)intent.getExtras().get("cascadeFile");
         String previousActivity = (String) intent.getExtras().get("from");
 
+        // use back camera if coming from MainActivity.
+        // flip camera if coming from this same activity (after pressing
+        // the 'FLIP' button)
         if (previousActivity.equals("MainActivity")) {
-            cameraChosen = true;
+            frontCamera = true;
         } else {
             Boolean newCameraChosen = (Boolean)intent.getExtras().get("cameraChosen");
-            cameraChosen = !newCameraChosen;
+            frontCamera = !newCameraChosen;
         }
 
         // request a ProcessCameraProvider
@@ -116,7 +119,7 @@ public class CameraXActivity extends MainActivity {
 
         CameraSelector cameraSelector;
 
-        if (cameraChosen) {
+        if (frontCamera) {
             cameraSelector = new CameraSelector.Builder()
                     .requireLensFacing(CameraSelector.LENS_FACING_BACK)
                     .build();
@@ -127,7 +130,6 @@ public class CameraXActivity extends MainActivity {
                     .build();
             rotationAngle = 270;
         }
-
 
         ImageAnalysis imageAnalysis =
                 new ImageAnalysis.Builder()
@@ -152,6 +154,9 @@ public class CameraXActivity extends MainActivity {
                     ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
                     bmp.copyPixelsFromBuffer(buffer);
                     Bitmap rotatedBMP = rotateBitmap(bmp);
+                    if (rotationAngle == 270) {
+                        rotatedBMP = flipBitmap(rotatedBMP);
+                    }
                     try {
                         DetectFace(rotatedBMP);
                     } catch (IOException e) {
@@ -236,6 +241,16 @@ public class CameraXActivity extends MainActivity {
                 bmp.getWidth(), bmp.getHeight(), matrix, true);
     }
 
+    // flip image horizontally when using front (selfie)
+    // camera for a more 'real' representation/view
+    // from: https://shaikhhamadali.blogspot.com/2013/08/image-flipping-mirroring-in-imageview.html
+    public Bitmap flipBitmap(Bitmap bmp) {
+        Matrix matrix = new Matrix();
+        matrix.preScale(-1.0f, 1.0f);
+        return Bitmap.createBitmap(bmp, 0, 0,
+                bmp.getWidth(), bmp.getHeight(), matrix, true);
+    }
+
     // perform classification on detected face using the
     // custom trained CNN
     public void ClassifyEmotion (Bitmap detected_image) {
@@ -287,10 +302,11 @@ public class CameraXActivity extends MainActivity {
         startActivity(returnIntent);
     }
 
+    // flip between front and back camera (and vice versa)
     public void flipCamera(View v) {
         Intent intent = getIntent();
         intent.putExtra("from", "CameraXActivity");
-        intent.putExtra("cameraChosen", cameraChosen);
+        intent.putExtra("cameraChosen", frontCamera);
         finish();
         startActivity(intent);
     }
