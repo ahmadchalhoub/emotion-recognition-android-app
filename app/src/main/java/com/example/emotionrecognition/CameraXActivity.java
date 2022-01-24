@@ -7,9 +7,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
+
 import android.media.Image;
 import android.os.Bundle;
+import android.renderscript.ScriptGroup;
 import android.util.Log;
 import android.util.Size;
 import android.view.View;
@@ -26,18 +33,17 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceDetection;
+import com.google.mlkit.vision.face.FaceDetectorOptions;
+import com.google.mlkit.vision.face.FaceDetector;
 
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Point;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.support.common.FileUtil;
@@ -67,10 +73,10 @@ public class CameraXActivity extends MainActivity {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private PreviewView previewView;
     private TextView cameraXText;
-    private ImageView imageView;
     private File newCascadeFile;
     private Boolean frontCamera;
     private int rotationAngle;
+    private ImageView imageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,7 +87,7 @@ public class CameraXActivity extends MainActivity {
 
         previewView = findViewById(R.id.previewView);
         cameraXText = findViewById(R.id.cameraXText);
-        imageView = findViewById(R.id.resultImage);
+        imageView = findViewById(R.id.imageView);
 
         Intent intent = getIntent();
         newCascadeFile = (File)intent.getExtras().get("cascadeFile");
@@ -131,37 +137,107 @@ public class CameraXActivity extends MainActivity {
             rotationAngle = 270;
         }
 
+        // Configure the face detector
+        FaceDetectorOptions realTimeOpts =
+                new FaceDetectorOptions.Builder()
+                        .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
+                        .build();
+
         ImageAnalysis imageAnalysis =
                 new ImageAnalysis.Builder()
                         .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                        .setTargetResolution(new Size(480, 480))
+                        .setTargetResolution(new Size(480, 360))
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
 
         imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this),
                 imageProxy -> {
                     @SuppressLint("UnsafeOptInUsageError") Image image = imageProxy.getImage();
-
                     assert image != null;
+
                     ByteBuffer firstBuffer = image.getPlanes()[0].getBuffer();
                     firstBuffer.rewind();
                     byte[] firstBytes = new byte[firstBuffer.remaining()];
                     firstBuffer.get(firstBytes);
 
-                    //Create bitmap with width, height, and 4 bytes color (RGBA)
+                    // Create bitmap with width, height, and 4 bytes color (RGBA)
                     Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
                             Bitmap.Config.ARGB_8888);
                     ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
                     bmp.copyPixelsFromBuffer(buffer);
-                    Bitmap rotatedBMP = rotateBitmap(bmp);
-                    if (rotationAngle == 270) {
-                        rotatedBMP = flipBitmap(rotatedBMP);
-                    }
+                    InputImage bmpImage = InputImage.fromBitmap(bmp, imageProxy.getImageInfo().getRotationDegrees());
+
+                    // initialize detector
+                    FaceDetector detector = FaceDetection.getClient(realTimeOpts);
+
+                    Task<List<Face>> result =
+                            detector.process(bmpImage)
+                                    .addOnSuccessListener(
+                                            new OnSuccessListener<List<Face>>() {
+                                                @Override
+                                                public void onSuccess(List<Face> faces) {
+
+                                                    Bitmap bmp = bmpImage.getBitmapInternal();
+                                                    Bitmap rotatedBMP = rotateBitmap(bmp, imageProxy.getImageInfo().getRotationDegrees());
+                                                    if (imageProxy.getImageInfo().getRotationDegrees() == 270) {
+                                                        rotatedBMP = flipBitmap(rotatedBMP);
+                                                    }
+
+                                                    Canvas mCanvas = new Canvas(rotatedBMP);
+
+                                                    Paint boxPaint;
+                                                    boxPaint = new Paint();
+                                                    boxPaint.setColor(Color.YELLOW);
+                                                    boxPaint.setStrokeWidth(10f);
+                                                    boxPaint.setStyle(Paint.Style.STROKE);
+
+                                                    Paint textPaint;
+                                                    textPaint = new Paint();
+                                                    textPaint.setColor(Color.BLACK);
+                                                    textPaint.setTextSize(40);
+                                                    textPaint.setStrokeWidth(7f);
+                                                    textPaint.setStyle(Paint.Style.FILL);
+
+                                                    for (Face face : faces) {
+                                                        //Bitmap bmp = bmpImage.getBitmapInternal();
+                                                        Rect bounds = face.getBoundingBox();
+
+                                                        // rotate bitmap obtained from InputImage because the 'InputImage.getBitmapInternal();'
+                                                        // method returned the non-rotated bitmap
+                                                        //Bitmap rotatedBMP = rotateBitmap(bmp, imageProxy.getImageInfo().getRotationDegrees());
+
+                                                        // mirror bitmap horizontally if using front camera
+                                                        //if (imageProxy.getImageInfo().getRotationDegrees() == 270) {
+                                                        //    rotatedBMP = flipBitmap(rotatedBMP);
+                                                        //}
+
+                                                        Bitmap croppedBMP = null;
+                                                        if ((bounds.left + bounds.width() <= rotatedBMP.getWidth()) && (bounds.top + bounds.height() <= rotatedBMP.getHeight()) && bounds.left > 0 && bounds.top > 0) {
+                                                            croppedBMP = Bitmap.createBitmap(rotatedBMP, bounds.left, bounds.top, bounds.width(), bounds.height());
+                                                            String classification = ClassifyEmotion(croppedBMP);
+                                                            mCanvas.drawRect(bounds, boxPaint);
+                                                            mCanvas.drawText(classification, bounds.left, bounds.bottom, textPaint);
+                                                        }
+                                                        imageView.setImageBitmap(rotatedBMP);
+                                                    }
+
+                                                }
+                                            })
+                                    .addOnFailureListener(
+                                            new OnFailureListener() {
+                                                @Override
+                                                public void onFailure(@NonNull Exception e) {
+                                                    cameraXText.setText("No faces detected!");
+                                                }
+                                            });
+                    /*
+
                     try {
                         DetectFace(rotatedBMP);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                     */
                     imageProxy.close();
                 });
 
@@ -170,6 +246,7 @@ public class CameraXActivity extends MainActivity {
                 imageAnalysis, preview);
     }
 
+    /*
     // detect faces in image using Haar Cascade
     public void DetectFace(Bitmap bmp) throws IOException {
         Mat source = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC4);
@@ -232,11 +309,13 @@ public class CameraXActivity extends MainActivity {
         }
     }
 
+*/
+
     // rotate the Bitmap returned by camera Intent
     // to normal (vertical) orientation
-    public Bitmap rotateBitmap(Bitmap bmp) {
+    public Bitmap rotateBitmap(Bitmap bmp, int newRotationAngle) {
         Matrix matrix = new Matrix();
-        matrix.postRotate(rotationAngle);
+        matrix.postRotate(newRotationAngle);
         return Bitmap.createBitmap(bmp, 0, 0,
                 bmp.getWidth(), bmp.getHeight(), matrix, true);
     }
@@ -253,8 +332,11 @@ public class CameraXActivity extends MainActivity {
 
     // perform classification on detected face using the
     // custom trained CNN
-    public void ClassifyEmotion (Bitmap detected_image) {
+    public String ClassifyEmotion (Bitmap detected_image) {
         try {
+            Bitmap scaledResult = Bitmap.createScaledBitmap(detected_image,
+                    48, 48, true);
+            imageView.setImageBitmap(scaledResult);
             MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(
                     this.getApplicationContext(), "emotion_cnn.tflite");
 
@@ -264,20 +346,21 @@ public class CameraXActivity extends MainActivity {
                     .add(new TransformToGrayscaleOp())
                     .build();
             TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
-            tensorImage.load(detected_image);
+            tensorImage.load(scaledResult);
             TensorImage newTensorImage = imageProcessor.process(tensorImage);
             TensorBuffer probabilityBuffer = TensorBuffer.createFixedSize(
                     new int[]{1, 7}, DataType.FLOAT32);
 
             tflite.run(newTensorImage.getBuffer(), probabilityBuffer.getBuffer());
-            getClassification(probabilityBuffer.getFloatArray(), labels);
+            String classification = getClassification(probabilityBuffer.getFloatArray(), labels);
+            return classification;
         } catch (IOException e) {
             System.out.println("Image classification failed!");
-        }
+        } return null;
     }
 
     // print the biggest classification probability and its corresponding index
-    private void getClassification(float[] floatArray, List<String> labels){
+    private String getClassification(float[] floatArray, List<String> labels){
         DecimalFormat df = new DecimalFormat("0.00");
         float maxValue = Integer.MIN_VALUE;
         int maxIndex = 0;
@@ -293,7 +376,9 @@ public class CameraXActivity extends MainActivity {
 
         String finalResult = "The face is '" + labels.get(maxIndex) + "' with " +
                 "classification " + "value of " + df.format(maxValue*100) + " %";
+
         cameraXText.setText(finalResult);
+        return labels.get(maxIndex);
     }
 
     // onClick function to allow user to return to MainActivity

@@ -13,13 +13,16 @@
         tools:layout_editor_absoluteX="-1dp">
         <androidx.camera.view.PreviewView
             android:id="@+id/previewView"
-            android:layout_width="0dp"
-            android:layout_height="0dp"></androidx.camera.view.PreviewView>
-        <ImageView
-            android:id="@+id/resultImage"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="600dp">
+        </androidx.camera.view.PreviewView>
     </FrameLayout>
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        tools:ignore="MissingConstraints" />
 
     <Button
         android:id="@+id/returnButton"
