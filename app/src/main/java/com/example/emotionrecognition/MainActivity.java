@@ -37,53 +37,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
-    public File newCascadeFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // initialize Haar Cascade file
-        try {
-            initializeCascadeFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     // open CameraXActivity to perform and view emotion recognition
     public void openCameraX(View v) {
         Intent returnIntent = new Intent(this, CameraXActivity.class);
-        returnIntent.putExtra("cascadeFile", newCascadeFile);
         returnIntent.putExtra("from", "MainActivity");
         startActivity(returnIntent);
-    }
-
-    // initialize the Haar Cascade file once
-    public void initializeCascadeFile() throws IOException {
-
-        // read data from 'haarcascade_frontalface_default.xml' file
-        // found in 'res/raw/' directory and write data to an output
-        // file, cascadeFile, using InputStream and FileOutputStream
-        InputStream input_stream = getResources().openRawResource(
-                R.raw.haarcascade_frontalface_default);
-        File cascadeDir = getDir("haarcascade_frontalface_default", 0);
-        newCascadeFile = new File(
-                cascadeDir, "haarcascade_frontalface_default.xml");
-        FileOutputStream output_stream = new FileOutputStream(newCascadeFile);
-        byte[] buffer = new byte[4096];
-        int bytesTransferred;
-        while ((bytesTransferred = input_stream.read(buffer)) != -1) {
-            output_stream.write(buffer, 0, bytesTransferred);
-        }
-        input_stream.close();
-        output_stream.close();
     }
 }

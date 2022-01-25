@@ -73,10 +73,9 @@ public class CameraXActivity extends MainActivity {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private PreviewView previewView;
     private TextView cameraXText;
-    private File newCascadeFile;
     private Boolean frontCamera;
-    private int rotationAngle;
     private ImageView imageView;
+    private boolean flipBox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +89,6 @@ public class CameraXActivity extends MainActivity {
         imageView = findViewById(R.id.imageView);
 
         Intent intent = getIntent();
-        newCascadeFile = (File)intent.getExtras().get("cascadeFile");
         String previousActivity = (String) intent.getExtras().get("from");
 
         // use back camera if coming from MainActivity.
@@ -129,187 +127,102 @@ public class CameraXActivity extends MainActivity {
             cameraSelector = new CameraSelector.Builder()
                     .requireLensFacing(CameraSelector.LENS_FACING_BACK)
                     .build();
-            rotationAngle = 90;
         } else {
             cameraSelector = new CameraSelector.Builder()
                     .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
                     .build();
-            rotationAngle = 270;
         }
 
         // Configure the face detector
-        FaceDetectorOptions realTimeOpts =
-                new FaceDetectorOptions.Builder()
-                        .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
-                        .build();
+        FaceDetectorOptions realTimeOpts = new FaceDetectorOptions.Builder()
+                .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
+                .build();
 
-        ImageAnalysis imageAnalysis =
-                new ImageAnalysis.Builder()
-                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                        .setTargetResolution(new Size(480, 360))
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build();
+        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .setTargetResolution(new Size(480, 360))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build();
 
-        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this),
-                imageProxy -> {
-                    @SuppressLint("UnsafeOptInUsageError") Image image = imageProxy.getImage();
-                    assert image != null;
+        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), imageProxy -> {
+            @SuppressLint("UnsafeOptInUsageError") Image image = imageProxy.getImage();
+            assert image != null;
 
-                    ByteBuffer firstBuffer = image.getPlanes()[0].getBuffer();
-                    firstBuffer.rewind();
-                    byte[] firstBytes = new byte[firstBuffer.remaining()];
-                    firstBuffer.get(firstBytes);
+            ByteBuffer firstBuffer = image.getPlanes()[0].getBuffer();
+            firstBuffer.rewind();
+            byte[] firstBytes = new byte[firstBuffer.remaining()];
+            firstBuffer.get(firstBytes);
 
-                    // Create bitmap with width, height, and 4 bytes color (RGBA)
-                    Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
-                            Bitmap.Config.ARGB_8888);
-                    ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
-                    bmp.copyPixelsFromBuffer(buffer);
-                    InputImage bmpImage = InputImage.fromBitmap(bmp, imageProxy.getImageInfo().getRotationDegrees());
+            // Create bitmap with width, height, and 4 bytes color (RGBA)
+            Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
+                    Bitmap.Config.ARGB_8888);
+            ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
+            bmp.copyPixelsFromBuffer(buffer);
+            InputImage bmpImage = InputImage.fromBitmap(bmp,
+                    imageProxy.getImageInfo().getRotationDegrees());
 
-                    // initialize detector
-                    FaceDetector detector = FaceDetection.getClient(realTimeOpts);
+            // initialize detector
+            FaceDetector detector = FaceDetection.getClient(realTimeOpts);
+            Task<List<Face>> result = detector.process(bmpImage)
+                    .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
+                        @Override
+                        public void onSuccess(List<Face> faces) {
+                            Bitmap bmp = bmpImage.getBitmapInternal();
+                            Bitmap rotatedBMP = rotateBitmap(bmp,
+                                    imageProxy.getImageInfo().getRotationDegrees());
+                            if (imageProxy.getImageInfo().getRotationDegrees() == 270) {
+                                rotatedBMP = flipBitmap(rotatedBMP);
+                                flipBox = true;
+                            }
 
-                    Task<List<Face>> result =
-                            detector.process(bmpImage)
-                                    .addOnSuccessListener(
-                                            new OnSuccessListener<List<Face>>() {
-                                                @Override
-                                                public void onSuccess(List<Face> faces) {
+                            Paint boxPaint;
+                            boxPaint = new Paint();
+                            boxPaint.setColor(Color.BLACK);
+                            boxPaint.setStrokeWidth(10f);
+                            boxPaint.setStyle(Paint.Style.STROKE);
 
-                                                    Bitmap bmp = bmpImage.getBitmapInternal();
-                                                    Bitmap rotatedBMP = rotateBitmap(bmp, imageProxy.getImageInfo().getRotationDegrees());
-                                                    if (imageProxy.getImageInfo().getRotationDegrees() == 270) {
-                                                        rotatedBMP = flipBitmap(rotatedBMP);
-                                                    }
+                            Paint textPaint;
+                            textPaint = new Paint();
+                            textPaint.setColor(Color.BLACK);
+                            textPaint.setTextSize(40);
+                            textPaint.setStrokeWidth(10f);
+                            textPaint.setStyle(Paint.Style.FILL);
 
-                                                    Canvas mCanvas = new Canvas(rotatedBMP);
+                            for (Face face : faces) {
+                                Rect bounds = face.getBoundingBox();
 
-                                                    Paint boxPaint;
-                                                    boxPaint = new Paint();
-                                                    boxPaint.setColor(Color.YELLOW);
-                                                    boxPaint.setStrokeWidth(10f);
-                                                    boxPaint.setStyle(Paint.Style.STROKE);
-
-                                                    Paint textPaint;
-                                                    textPaint = new Paint();
-                                                    textPaint.setColor(Color.BLACK);
-                                                    textPaint.setTextSize(40);
-                                                    textPaint.setStrokeWidth(7f);
-                                                    textPaint.setStyle(Paint.Style.FILL);
-
-                                                    for (Face face : faces) {
-                                                        //Bitmap bmp = bmpImage.getBitmapInternal();
-                                                        Rect bounds = face.getBoundingBox();
-
-                                                        // rotate bitmap obtained from InputImage because the 'InputImage.getBitmapInternal();'
-                                                        // method returned the non-rotated bitmap
-                                                        //Bitmap rotatedBMP = rotateBitmap(bmp, imageProxy.getImageInfo().getRotationDegrees());
-
-                                                        // mirror bitmap horizontally if using front camera
-                                                        //if (imageProxy.getImageInfo().getRotationDegrees() == 270) {
-                                                        //    rotatedBMP = flipBitmap(rotatedBMP);
-                                                        //}
-
-                                                        Bitmap croppedBMP = null;
-                                                        if ((bounds.left + bounds.width() <= rotatedBMP.getWidth()) && (bounds.top + bounds.height() <= rotatedBMP.getHeight()) && bounds.left > 0 && bounds.top > 0) {
-                                                            croppedBMP = Bitmap.createBitmap(rotatedBMP, bounds.left, bounds.top, bounds.width(), bounds.height());
-                                                            String classification = ClassifyEmotion(croppedBMP);
-                                                            mCanvas.drawRect(bounds, boxPaint);
-                                                            mCanvas.drawText(classification, bounds.left, bounds.bottom, textPaint);
-                                                        }
-                                                        imageView.setImageBitmap(rotatedBMP);
-                                                    }
-
-                                                }
-                                            })
-                                    .addOnFailureListener(
-                                            new OnFailureListener() {
-                                                @Override
-                                                public void onFailure(@NonNull Exception e) {
-                                                    cameraXText.setText("No faces detected!");
-                                                }
-                                            });
-                    /*
-
-                    try {
-                        DetectFace(rotatedBMP);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                     */
-                    imageProxy.close();
-                });
+                                Bitmap croppedBMP = null;
+                                if ((bounds.left + bounds.width() <= rotatedBMP.getWidth()) &&
+                                        (bounds.top + bounds.height() <= rotatedBMP.getHeight())
+                                        && bounds.left > 0 && bounds.top > 0) {
+                                    croppedBMP = Bitmap.createBitmap(rotatedBMP, bounds.left,
+                                            bounds.top, bounds.width(), bounds.height());
+                                    String classification = ClassifyEmotion(croppedBMP);
+                                    if (flipBox) {
+                                        rotatedBMP = flipBitmap(rotatedBMP);
+                                    }
+                                    Canvas mCanvas = new Canvas(rotatedBMP);
+                                    mCanvas.drawRect(bounds, boxPaint);
+                                    mCanvas.drawText(classification, bounds.left,
+                                            (bounds.bottom+20), textPaint);
+                                }
+                                imageView.setImageBitmap(rotatedBMP);
+                            }
+                        }
+                            })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            cameraXText.setText("No faces detected!");
+                        }
+                    });
+            imageProxy.close();
+        });
 
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
         cameraProvider.bindToLifecycle(this, cameraSelector,
                 imageAnalysis, preview);
     }
-
-    /*
-    // detect faces in image using Haar Cascade
-    public void DetectFace(Bitmap bmp) throws IOException {
-        Mat source = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC4);
-        Mat img = new Mat(bmp.getWidth(), bmp.getHeight(), CvType.CV_8UC1);
-        Utils.bitmapToMat(bmp, source);
-        Imgproc.cvtColor(source, img, Imgproc.COLOR_RGB2GRAY);
-
-        // declare CascadeClassifier object using absolute
-        // path of newly created XML file
-        CascadeClassifier faceDetector = new CascadeClassifier(
-                newCascadeFile.getAbsolutePath());
-        MatOfRect detections = new MatOfRect();
-
-        // perform face detections
-        faceDetector.detectMultiScale(img, detections);
-
-        if (detections.empty()) {
-            cameraXText.setText("No faces were detected in the image. Try again!");
-            Bitmap bitmapResult;
-            bitmapResult = Bitmap.createBitmap(bmp.getWidth(), bmp.getHeight(),
-                    Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(source, bitmapResult);
-            imageView.setImageBitmap(bitmapResult);
-        } else {
-            // extract values for biggest detected face
-            double highestArea = Integer.MIN_VALUE;
-            int highestX = Integer.MIN_VALUE;
-            int highestY = Integer.MIN_VALUE;
-            int highestWidth = Integer.MIN_VALUE;
-            int highestHeight = Integer.MIN_VALUE;
-            for (Rect rect : detections.toArray()) {
-                if (rect.area() > highestArea) {
-                    highestArea = rect.area();
-                    highestX = rect.x;
-                    highestY = rect.y;
-                    highestWidth = rect.width;
-                    highestHeight = rect.height;
-                }
-            }
-
-            Rect rectCrop = new Rect(highestX, highestY, highestWidth, highestHeight);
-            Mat croppedImage = new Mat(source, rectCrop);
-
-            Imgproc.rectangle(source, new Point(highestX, highestY), new Point(highestX +
-                            highestWidth, highestY + highestHeight), new Scalar(0, 255, 0));
-
-            Bitmap bitmapResult;
-            bitmapResult = Bitmap.createBitmap(highestWidth, highestHeight,
-                    Bitmap.Config.ARGB_8888);
-
-            Bitmap originalImage = Bitmap.createBitmap(source.width(), source.height(),
-                    Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(source, originalImage);
-
-            Utils.matToBitmap(croppedImage, bitmapResult);
-            Bitmap scaledResult = Bitmap.createScaledBitmap(bitmapResult,
-                    48, 48, true);
-            ClassifyEmotion(scaledResult);
-            imageView.setImageBitmap(originalImage);
-        }
-    }
-
-*/
 
     // rotate the Bitmap returned by camera Intent
     // to normal (vertical) orientation
