@@ -1,7 +1,7 @@
 // Author: Ahmad Chalhoub (https://github.com/ahmadchalhoub)
 
 // Description: This is a native Android Application, built in Android Studio,
-// that uses OpenCV's Haar Cascade and a Convolutional Neural Network to perform
+// that uses Google's MLKit and a Convolutional Neural Network to perform
 // facial emotion recognition. The seven different emotions that the CNN is trained
 // for are the following:
 //

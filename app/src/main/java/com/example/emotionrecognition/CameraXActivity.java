@@ -175,39 +175,55 @@ public class CameraXActivity extends MainActivity {
                                 flipBox = true;
                             }
 
-                            Paint boxPaint;
-                            boxPaint = new Paint();
-                            boxPaint.setColor(Color.BLACK);
-                            boxPaint.setStrokeWidth(10f);
-                            boxPaint.setStyle(Paint.Style.STROKE);
-
-                            Paint textPaint;
-                            textPaint = new Paint();
-                            textPaint.setColor(Color.BLACK);
-                            textPaint.setTextSize(40);
-                            textPaint.setStrokeWidth(10f);
-                            textPaint.setStyle(Paint.Style.FILL);
-
                             for (Face face : faces) {
                                 Rect bounds = face.getBoundingBox();
 
+                                Paint boxPaint;
+                                boxPaint = new Paint();
+                                boxPaint.setColor(Color.BLACK);
+                                boxPaint.setStrokeWidth(10f);
+                                boxPaint.setStyle(Paint.Style.STROKE);
+
+                                Paint textPaint;
+                                textPaint = new Paint();
+                                textPaint.setColor(Color.BLACK);
+                                textPaint.setTextSize((bounds.right - bounds.left)/5);
+                                textPaint.setStrokeWidth(10f);
+                                textPaint.setStyle(Paint.Style.FILL);
+
                                 Bitmap croppedBMP = null;
+
                                 if ((bounds.left + bounds.width() <= rotatedBMP.getWidth()) &&
                                         (bounds.top + bounds.height() <= rotatedBMP.getHeight())
                                         && bounds.left > 0 && bounds.top > 0) {
                                     croppedBMP = Bitmap.createBitmap(rotatedBMP, bounds.left,
                                             bounds.top, bounds.width(), bounds.height());
                                     String classification = ClassifyEmotion(croppedBMP);
-                                    if (flipBox) {
-                                        rotatedBMP = flipBitmap(rotatedBMP);
-                                    }
+
                                     Canvas mCanvas = new Canvas(rotatedBMP);
-                                    mCanvas.drawRect(bounds, boxPaint);
-                                    mCanvas.drawText(classification, bounds.left,
-                                            (bounds.bottom+20), textPaint);
+
+                                    // if-statement for correct box and text overlay
+                                    // on flipped front camera frames
+                                    // STILL NEED TO FIX TEXT PLACEMENT ISSUE
+                                    if (flipBox) {
+                                        mCanvas.drawText(classification, (bounds.left + bounds.right)/2,
+                                                (bounds.bottom), textPaint);
+                                        rotatedBMP = flipBitmap(rotatedBMP);
+                                        int tmp = bounds.left;
+                                        bounds.left = bounds.right;
+                                        bounds.right = tmp;
+                                        Canvas nCanvas = new Canvas(rotatedBMP);
+                                        nCanvas.drawRect(bounds, boxPaint);
+                                        rotatedBMP = flipBitmap(rotatedBMP);
+
+                                    } else {
+                                        mCanvas.drawRect(bounds, boxPaint);
+                                        mCanvas.drawText(classification, (bounds.left + bounds.right)/2,
+                                                (bounds.bottom+10f), textPaint);
+                                    }
+
                                 }
-                                imageView.setImageBitmap(rotatedBMP);
-                            }
+                            } imageView.setImageBitmap(rotatedBMP);
                         }
                             })
                     .addOnFailureListener(new OnFailureListener() {
