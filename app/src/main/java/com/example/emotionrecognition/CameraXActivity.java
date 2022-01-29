@@ -76,6 +76,9 @@ public class CameraXActivity extends MainActivity {
     private Boolean frontCamera;
     private ImageView imageView;
     private boolean flipBox;
+    private GraphicOverlay mGraphicOverlay;
+    private Paint idPaint;
+    private Paint boxPaint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +90,7 @@ public class CameraXActivity extends MainActivity {
         previewView = findViewById(R.id.previewView);
         cameraXText = findViewById(R.id.cameraXText);
         imageView = findViewById(R.id.imageView);
+        mGraphicOverlay = findViewById(R.id.graphic_overlay);
 
         Intent intent = getIntent();
         String previousActivity = (String) intent.getExtras().get("from");
@@ -153,7 +157,7 @@ public class CameraXActivity extends MainActivity {
             byte[] firstBytes = new byte[firstBuffer.remaining()];
             firstBuffer.get(firstBytes);
 
-            // Create bitmap with width, height, and 4 bytes color (RGBA)
+            // Store image from camera into a Bitmap
             Bitmap bmp = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
                     Bitmap.Config.ARGB_8888);
             ByteBuffer buffer = ByteBuffer.wrap(firstBytes);
@@ -167,6 +171,9 @@ public class CameraXActivity extends MainActivity {
                     .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                         @Override
                         public void onSuccess(List<Face> faces) {
+                            processFaceContourDetectionResult(faces);
+
+                            /*
                             Bitmap bmp = bmpImage.getBitmapInternal();
                             Bitmap rotatedBMP = rotateBitmap(bmp,
                                     imageProxy.getImageInfo().getRotationDegrees());
@@ -206,8 +213,6 @@ public class CameraXActivity extends MainActivity {
                                     // on flipped front camera frames
                                     // STILL NEED TO FIX TEXT PLACEMENT ISSUE
                                     if (flipBox) {
-                                        mCanvas.drawText(classification, (bounds.left + bounds.right)/2,
-                                                (bounds.bottom), textPaint);
                                         rotatedBMP = flipBitmap(rotatedBMP);
                                         int tmp = bounds.left;
                                         bounds.left = bounds.right;
@@ -215,7 +220,9 @@ public class CameraXActivity extends MainActivity {
                                         Canvas nCanvas = new Canvas(rotatedBMP);
                                         nCanvas.drawRect(bounds, boxPaint);
                                         rotatedBMP = flipBitmap(rotatedBMP);
-
+                                        Canvas tCanvas = new Canvas(rotatedBMP);
+                                        tCanvas.drawText(classification, bounds.right,
+                                                (bounds.bottom), textPaint);
                                     } else {
                                         mCanvas.drawRect(bounds, boxPaint);
                                         mCanvas.drawText(classification, (bounds.left + bounds.right)/2,
@@ -223,9 +230,10 @@ public class CameraXActivity extends MainActivity {
                                     }
 
                                 }
-                            } imageView.setImageBitmap(rotatedBMP);
+                            } //imageView.setImageBitmap(rotatedBMP);
                         }
-                            })
+                        */
+                            }})
                     .addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception e) {
@@ -238,6 +246,40 @@ public class CameraXActivity extends MainActivity {
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
         cameraProvider.bindToLifecycle(this, cameraSelector,
                 imageAnalysis, preview);
+    }
+
+    // https://codelabs.developers.google.com/codelabs/mlkit-android#5
+    private void processFaceContourDetectionResult(List<Face> faces) {
+        // Task completed successfully
+        if (faces.size() == 0) {
+            cameraXText.setText("No faces were found!");
+            return;
+        }
+
+        final int selectedColor = Color.BLACK;
+
+        idPaint = new Paint();
+        idPaint.setColor(selectedColor);
+        idPaint.setTextSize(70.0f);
+
+        boxPaint = new Paint();
+        boxPaint.setColor(selectedColor);
+        boxPaint.setStyle(Paint.Style.STROKE);
+        boxPaint.setStrokeWidth(5.0f);
+
+        mGraphicOverlay.clear();
+
+        for (int i = 0; i < faces.size(); ++i) {
+            Face face = faces.get(i);
+
+            if (face == null) {
+                return;
+            }
+
+            FaceContourGraphic faceGraphic = new FaceContourGraphic(mGraphicOverlay);
+            mGraphicOverlay.add(faceGraphic);
+            faceGraphic.updateFace(face);
+        }
     }
 
     // rotate the Bitmap returned by camera Intent
