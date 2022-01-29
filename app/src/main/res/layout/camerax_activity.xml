@@ -8,20 +8,44 @@
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
-        android:layout_height="592dp"
+        android:layout_height="match_parent"
         tools:ignore="MissingConstraints">
+
+        <TextView
+            android:id="@+id/cameraXText"
+            android:layout_width="288dp"
+            android:layout_height="34dp"
+            android:gravity="center"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/returnButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.495"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/container"
+            app:layout_constraintVertical_bias="0.609" />
+
         <androidx.camera.view.PreviewView
             android:id="@+id/previewView"
-            android:layout_width="0dp"
-            android:layout_height="0dp">
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
         </androidx.camera.view.PreviewView>
     </FrameLayout>
 
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="match_parent"
-        android:layout_height="600dp"
+        android:layout_height="match_parent"
         tools:ignore="MissingConstraints" />
+
+    <com.example.emotionrecognition.GraphicOverlay
+        android:id="@+id/graphic_overlay"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_alignParentStart="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/returnButton"
@@ -37,19 +61,6 @@
         app:layout_constraintTop_toBottomOf="@+id/container"
         app:layout_constraintVertical_bias="0.985" />
 
-    <TextView
-        android:id="@+id/cameraXText"
-        android:layout_width="288dp"
-        android:layout_height="34dp"
-        android:gravity="center"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/returnButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/container"
-        app:layout_constraintVertical_bias="0.609" />
-
     <Button
         android:id="@+id/button"
         android:layout_width="124dp"
@@ -61,7 +72,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.392"
         app:layout_constraintStart_toEndOf="@+id/returnButton"
-        app:layout_constraintTop_toBottomOf="@+id/cameraXText"
         app:layout_constraintVertical_bias="0.923" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
