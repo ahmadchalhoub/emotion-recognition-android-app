@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package com.example.emotionrecognition;
 
 import android.content.Context;
@@ -62,13 +63,58 @@ public class GraphicOverlay extends View {
             this.overlay = overlay;
         }
 
+        /**
+         * Draw the graphic on the supplied canvas. Drawing should use the following methods to convert
+         * to view coordinates for the graphics that are drawn:
+         * <p>
+         * <ol>
+         * <li>{@link Graphic#scaleX(float)} and {@link Graphic#scaleY(float)} adjust the size of the
+         * supplied value from the preview scale to the view scale.
+         * <li>{@link Graphic#translateX(float)} and {@link Graphic#translateY(float)} adjust the
+         * coordinate from the preview's coordinate system to the view coordinate system.
+         * </ol>
+         *
+         * @param canvas drawing canvas
+         */
         public abstract void draw(Canvas canvas);
+
+        /**
+         * Adjusts a horizontal value of the supplied value from the preview scale to the view scale.
+         */
+        public float scaleX(float horizontal) {
+            return horizontal * overlay.widthScaleFactor;
+        }
+
+        /**
+         * Adjusts a vertical value of the supplied value from the preview scale to the view scale.
+         */
+        public float scaleY(float vertical) {
+            return vertical * overlay.heightScaleFactor;
+        }
 
         /**
          * Returns the application context of the app.
          */
         public Context getApplicationContext() {
             return overlay.getContext().getApplicationContext();
+        }
+
+        /**
+         * Adjusts the x coordinate from the preview's coordinate system to the view coordinate system.
+         */
+        public float translateX(float x) {
+            if (overlay.facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                return overlay.getWidth() - scaleX(x);
+            } else {
+                return scaleX(x);
+            }
+        }
+
+        /**
+         * Adjusts the y coordinate from the preview's coordinate system to the view coordinate system.
+         */
+        public float translateY(float y) {
+            return scaleY(y);
         }
 
         public void postInvalidate() {
@@ -96,6 +142,29 @@ public class GraphicOverlay extends View {
     public void add(Graphic graphic) {
         synchronized (lock) {
             graphics.add(graphic);
+        }
+        postInvalidate();
+    }
+
+    /**
+     * Removes a graphic from the overlay.
+     */
+    public void remove(Graphic graphic) {
+        synchronized (lock) {
+            graphics.remove(graphic);
+        }
+        postInvalidate();
+    }
+
+    /**
+     * Sets the camera attributes for size and facing direction, which informs how to transform image
+     * coordinates later.
+     */
+    public void setCameraInfo(int previewWidth, int previewHeight, int facing) {
+        synchronized (lock) {
+            this.previewWidth = previewWidth;
+            this.previewHeight = previewHeight;
+            this.facing = facing;
         }
         postInvalidate();
     }

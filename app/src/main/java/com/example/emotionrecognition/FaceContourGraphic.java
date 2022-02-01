@@ -3,15 +3,23 @@ package com.example.emotionrecognition;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PointF;
 
 import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceContour;
+import com.google.mlkit.vision.face.FaceLandmark;
+
+import java.util.List;
 
 /** Graphic instance for rendering face contours graphic overlay view. */
 public class FaceContourGraphic extends GraphicOverlay.Graphic {
 
     private static final float ID_TEXT_SIZE = 70.0f;
+    private static final float ID_Y_OFFSET = 80.0f;
+    private static final float ID_X_OFFSET = -70.0f;
     private static final float BOX_STROKE_WIDTH = 5.0f;
 
+    private final Paint facePositionPaint;
     private final Paint idPaint;
     private final Paint boxPaint;
 
@@ -19,8 +27,10 @@ public class FaceContourGraphic extends GraphicOverlay.Graphic {
 
     public FaceContourGraphic(GraphicOverlay overlay) {
         super(overlay);
-
         final int selectedColor = Color.BLACK;
+
+        facePositionPaint = new Paint();
+        facePositionPaint.setColor(selectedColor);
 
         idPaint = new Paint();
         idPaint.setColor(selectedColor);
@@ -49,13 +59,20 @@ public class FaceContourGraphic extends GraphicOverlay.Graphic {
             return;
         }
 
-        System.out.println("second left: " + face.getBoundingBox().left);
-        System.out.println("second left: " + face.getBoundingBox().right);
-        System.out.println("Detected face width: " + face.getBoundingBox().width());
-        System.out.println("Detected face height: " + face.getBoundingBox().height());
+        // Draw text on the face
+        float x = translateX(face.getBoundingBox().centerX());
+        float y = translateY(face.getBoundingBox().centerY());
+        canvas.drawText("id: " + face.getTrackingId(), x + ID_X_OFFSET,
+                y + ID_Y_OFFSET, idPaint);
 
-        canvas.drawText("face", face.getBoundingBox().left, face.getBoundingBox().bottom, idPaint);
-        canvas.drawRect(face.getBoundingBox().left+100, face.getBoundingBox().top,
-                face.getBoundingBox().right, face.getBoundingBox().bottom, boxPaint);
+        // Draws a bounding box around the face.
+        float xOffset = scaleX(face.getBoundingBox().width() / 2.0f);
+        float yOffset = scaleY(face.getBoundingBox().height() / 2.0f);
+        float left = x - xOffset;
+        float top = y - yOffset;
+        float right = x + xOffset;
+        float bottom = y + yOffset;
+        canvas.drawRect(left, top, right, bottom, boxPaint);
+
     }
 }

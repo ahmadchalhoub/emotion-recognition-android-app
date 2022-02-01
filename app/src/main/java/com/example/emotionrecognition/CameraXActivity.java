@@ -89,7 +89,7 @@ public class CameraXActivity extends MainActivity {
 
         previewView = findViewById(R.id.previewView);
         cameraXText = findViewById(R.id.cameraXText);
-        imageView = findViewById(R.id.imageView);
+        //imageView = findViewById(R.id.imageView);
         mGraphicOverlay = findViewById(R.id.graphic_overlay);
 
         Intent intent = getIntent();
@@ -250,24 +250,13 @@ public class CameraXActivity extends MainActivity {
 
     // https://codelabs.developers.google.com/codelabs/mlkit-android#5
     private void processFaceContourDetectionResult(List<Face> faces) {
-        // Task completed successfully
+
+        mGraphicOverlay.clear();
+
         if (faces.size() == 0) {
             cameraXText.setText("No faces were found!");
             return;
         }
-
-        final int selectedColor = Color.BLACK;
-
-        idPaint = new Paint();
-        idPaint.setColor(selectedColor);
-        idPaint.setTextSize(70.0f);
-
-        boxPaint = new Paint();
-        boxPaint.setColor(selectedColor);
-        boxPaint.setStyle(Paint.Style.STROKE);
-        boxPaint.setStrokeWidth(5.0f);
-
-        mGraphicOverlay.clear();
 
         for (int i = 0; i < faces.size(); ++i) {
             Face face = faces.get(i);
@@ -278,6 +267,10 @@ public class CameraXActivity extends MainActivity {
 
             FaceContourGraphic faceGraphic = new FaceContourGraphic(mGraphicOverlay);
             mGraphicOverlay.add(faceGraphic);
+            System.out.println("mGraphicOverlay width = " + mGraphicOverlay.getWidth());
+            System.out.println("mGraphicOverlay height = " + mGraphicOverlay.getHeight());
+            mGraphicOverlay.setCameraInfo(415, 650,
+                    1);
             faceGraphic.updateFace(face);
         }
     }
@@ -307,7 +300,7 @@ public class CameraXActivity extends MainActivity {
         try {
             Bitmap scaledResult = Bitmap.createScaledBitmap(detected_image,
                     48, 48, true);
-            imageView.setImageBitmap(scaledResult);
+            //imageView.setImageBitmap(scaledResult);
             MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(
                     this.getApplicationContext(), "emotion_cnn.tflite");
 
