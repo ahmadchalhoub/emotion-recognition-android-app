@@ -7,10 +7,11 @@
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
-        android:layout_width="415dp"
-        android:layout_height="650dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" >
+    </androidx.camera.view.PreviewView>
 
     <com.example.emotionrecognition.GraphicOverlay
         android:id="@+id/graphic_overlay"
@@ -22,11 +23,11 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!--<ImageView
+    <ImageView
         android:id="@+id/imageView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:ignore="MissingConstraints" />-->
+        android:layout_width="250dp"
+        android:layout_height="338dp"
+        tools:ignore="MissingConstraints" />
 
     <TextView
         android:id="@+id/cameraXText"

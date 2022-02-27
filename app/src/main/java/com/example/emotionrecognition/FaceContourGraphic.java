@@ -3,11 +3,8 @@ package com.example.emotionrecognition;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PointF;
 
 import com.google.mlkit.vision.face.Face;
-import com.google.mlkit.vision.face.FaceContour;
-import com.google.mlkit.vision.face.FaceLandmark;
 
 import java.util.List;
 
@@ -27,17 +24,16 @@ public class FaceContourGraphic extends GraphicOverlay.Graphic {
 
     public FaceContourGraphic(GraphicOverlay overlay) {
         super(overlay);
-        final int selectedColor = Color.BLACK;
 
         facePositionPaint = new Paint();
-        facePositionPaint.setColor(selectedColor);
+        facePositionPaint.setColor(Color.BLACK);
 
         idPaint = new Paint();
-        idPaint.setColor(selectedColor);
+        idPaint.setColor(Color.BLACK);
         idPaint.setTextSize(ID_TEXT_SIZE);
 
         boxPaint = new Paint();
-        boxPaint.setColor(selectedColor);
+        boxPaint.setColor(Color.BLACK);
         boxPaint.setStyle(Paint.Style.STROKE);
         boxPaint.setStrokeWidth(BOX_STROKE_WIDTH);
     }
@@ -61,18 +57,33 @@ public class FaceContourGraphic extends GraphicOverlay.Graphic {
 
         // Draw text on the face
         float x = translateX(face.getBoundingBox().centerX());
+        //System.out.println("centerX = " + face.getBoundingBox().centerX());
+        //System.out.println("translated centerX = " + translateX(face.getBoundingBox().centerX()));
+
         float y = translateY(face.getBoundingBox().centerY());
-        canvas.drawText("id: " + face.getTrackingId(), x + ID_X_OFFSET,
-                y + ID_Y_OFFSET, idPaint);
+        //System.out.println("centerY = " + face.getBoundingBox().centerY());
+        //System.out.println("translated centerY = " + translateY(face.getBoundingBox().centerY()));
+        //canvas.drawText("id: " + face.getTrackingId(), x + ID_X_OFFSET,
+        //        y + ID_Y_OFFSET, idPaint);
 
         // Draws a bounding box around the face.
-        float xOffset = scaleX(face.getBoundingBox().width() / 2.0f);
-        float yOffset = scaleY(face.getBoundingBox().height() / 2.0f);
-        float left = x - xOffset;
-        float top = y - yOffset;
-        float right = x + xOffset;
-        float bottom = y + yOffset;
+        //float xOffset = scaleX(face.getBoundingBox().width() / 2.0f);
+        //float yOffset = scaleY(face.getBoundingBox().height() / 2.0f);
+        //float left = x - xOffset;
+        //float top = y - yOffset;
+        //float right = x + xOffset;
+        //float bottom = y + yOffset;
+
+        float left = scaleX(face.getBoundingBox().left);
+        float right = scaleX(face.getBoundingBox().right);
+        float top = scaleY(face.getBoundingBox().top);
+        float bottom = scaleY(face.getBoundingBox().bottom);
+
         canvas.drawRect(left, top, right, bottom, boxPaint);
 
+        System.out.println("left = " + face.getBoundingBox().left);
+        System.out.println("top = " + face.getBoundingBox().top);
+        System.out.println("right = " + face.getBoundingBox().right);
+        System.out.println("bottom = " + face.getBoundingBox().bottom);
     }
 }

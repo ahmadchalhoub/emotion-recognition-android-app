@@ -14,6 +14,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 
+import android.hardware.camera2.CameraCharacteristics;
 import android.media.Image;
 import android.os.Bundle;
 import android.renderscript.ScriptGroup;
@@ -77,8 +78,6 @@ public class CameraXActivity extends MainActivity {
     private ImageView imageView;
     private boolean flipBox;
     private GraphicOverlay mGraphicOverlay;
-    private Paint idPaint;
-    private Paint boxPaint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +88,7 @@ public class CameraXActivity extends MainActivity {
 
         previewView = findViewById(R.id.previewView);
         cameraXText = findViewById(R.id.cameraXText);
-        //imageView = findViewById(R.id.imageView);
+        imageView = findViewById(R.id.imageView);
         mGraphicOverlay = findViewById(R.id.graphic_overlay);
 
         Intent intent = getIntent();
@@ -122,9 +121,7 @@ public class CameraXActivity extends MainActivity {
     // select a camera and bind the lifecycle and use cases
     void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
 
-        Preview preview = new Preview.Builder()
-                .build();
-
+        Preview preview = new Preview.Builder().build();
         CameraSelector cameraSelector;
 
         if (frontCamera) {
@@ -144,7 +141,7 @@ public class CameraXActivity extends MainActivity {
 
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .setTargetResolution(new Size(480, 360))
+                .setTargetResolution(new Size(480, 640))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build();
 
@@ -167,12 +164,11 @@ public class CameraXActivity extends MainActivity {
 
             // initialize detector
             FaceDetector detector = FaceDetection.getClient(realTimeOpts);
-            Task<List<Face>> result = detector.process(bmpImage)
+            Task<List<Face>> task = detector.process(bmpImage)
                     .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                         @Override
                         public void onSuccess(List<Face> faces) {
                             processFaceContourDetectionResult(faces);
-
                             /*
                             Bitmap bmp = bmpImage.getBitmapInternal();
                             Bitmap rotatedBMP = rotateBitmap(bmp,
@@ -237,7 +233,7 @@ public class CameraXActivity extends MainActivity {
                     .addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception e) {
-                            cameraXText.setText("No faces detected!");
+                            cameraXText.setText("Failed to run face detection");
                         }
                     });
             imageProxy.close();
@@ -256,22 +252,23 @@ public class CameraXActivity extends MainActivity {
         if (faces.size() == 0) {
             cameraXText.setText("No faces were found!");
             return;
-        }
+        } else {
+            cameraXText.setText("A face was detected!");
+            for (int i = 0; i < faces.size(); ++i) {
+                Face face = faces.get(i);
 
-        for (int i = 0; i < faces.size(); ++i) {
-            Face face = faces.get(i);
+                if (face == null) {
+                    return;
+                }
 
-            if (face == null) {
-                return;
+                FaceContourGraphic faceGraphic = new FaceContourGraphic(mGraphicOverlay);
+                mGraphicOverlay.setCameraInfo(480, 640,
+                        CameraCharacteristics.LENS_FACING_BACK);
+                mGraphicOverlay.add(faceGraphic);
+                System.out.println("previewView width = " + previewView.getWidth());
+                System.out.println("previewView height = " + previewView.getHeight());
+                faceGraphic.updateFace(face);
             }
-
-            FaceContourGraphic faceGraphic = new FaceContourGraphic(mGraphicOverlay);
-            mGraphicOverlay.add(faceGraphic);
-            System.out.println("mGraphicOverlay width = " + mGraphicOverlay.getWidth());
-            System.out.println("mGraphicOverlay height = " + mGraphicOverlay.getHeight());
-            mGraphicOverlay.setCameraInfo(415, 650,
-                    1);
-            faceGraphic.updateFace(face);
         }
     }
 
