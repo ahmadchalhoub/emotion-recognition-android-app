@@ -168,7 +168,24 @@ public class CameraXActivity extends MainActivity {
                     .addOnSuccessListener(new OnSuccessListener<List<Face>>() {
                         @Override
                         public void onSuccess(List<Face> faces) {
-                            processFaceContourDetectionResult(faces);
+                            Bitmap rotatedBMP = rotateBitmap(bmp,
+                                    imageProxy.getImageInfo().getRotationDegrees());
+
+                            Bitmap croppedBMP = null;
+                            for (Face face : faces) {
+                                Rect bounds = face.getBoundingBox();
+                                if ((bounds.left + bounds.width() <= rotatedBMP.getWidth()) &&
+                                        (bounds.top + bounds.height() <= rotatedBMP.getHeight())
+                                        && bounds.left > 0 && bounds.top > 0) {
+                                    croppedBMP = Bitmap.createBitmap(rotatedBMP, bounds.left,
+                                            bounds.top, bounds.width(), bounds.height());
+                                    if (imageProxy.getImageInfo().getRotationDegrees() == 270) {
+                                        croppedBMP = flipBitmap(croppedBMP);
+                                    }
+                                    String classification = ClassifyEmotion(croppedBMP);
+                                    processFaceContourDetectionResult(faces, classification);
+                                }
+                            }
                             /*
                             Bitmap bmp = bmpImage.getBitmapInternal();
                             Bitmap rotatedBMP = rotateBitmap(bmp,
@@ -205,28 +222,8 @@ public class CameraXActivity extends MainActivity {
 
                                     Canvas mCanvas = new Canvas(rotatedBMP);
 
-                                    // if-statement for correct box and text overlay
-                                    // on flipped front camera frames
-                                    // STILL NEED TO FIX TEXT PLACEMENT ISSUE
-                                    if (flipBox) {
-                                        rotatedBMP = flipBitmap(rotatedBMP);
-                                        int tmp = bounds.left;
-                                        bounds.left = bounds.right;
-                                        bounds.right = tmp;
-                                        Canvas nCanvas = new Canvas(rotatedBMP);
-                                        nCanvas.drawRect(bounds, boxPaint);
-                                        rotatedBMP = flipBitmap(rotatedBMP);
-                                        Canvas tCanvas = new Canvas(rotatedBMP);
-                                        tCanvas.drawText(classification, bounds.right,
-                                                (bounds.bottom), textPaint);
-                                    } else {
-                                        mCanvas.drawRect(bounds, boxPaint);
-                                        mCanvas.drawText(classification, (bounds.left + bounds.right)/2,
-                                                (bounds.bottom+10f), textPaint);
-                                    }
-
                                 }
-                            } //imageView.setImageBitmap(rotatedBMP);
+                            }
                         }
                         */
                             }})
@@ -245,7 +242,7 @@ public class CameraXActivity extends MainActivity {
     }
 
     // https://codelabs.developers.google.com/codelabs/mlkit-android#5
-    private void processFaceContourDetectionResult(List<Face> faces) {
+    private void processFaceContourDetectionResult(List<Face> faces, String classification) {
 
         mGraphicOverlay.clear();
 
@@ -261,12 +258,18 @@ public class CameraXActivity extends MainActivity {
                     return;
                 }
 
-                FaceContourGraphic faceGraphic = new FaceContourGraphic(mGraphicOverlay);
-                mGraphicOverlay.setCameraInfo(480, 640,
-                        CameraCharacteristics.LENS_FACING_BACK);
+                FaceContourGraphic faceGraphic = new FaceContourGraphic(
+                        mGraphicOverlay, classification);
+
+                if (frontCamera) {
+                    mGraphicOverlay.setCameraInfo(480, 640,
+                            CameraCharacteristics.LENS_FACING_BACK);
+                } else {
+                    mGraphicOverlay.setCameraInfo(480, 640,
+                            CameraCharacteristics.LENS_FACING_FRONT);
+                }
+
                 mGraphicOverlay.add(faceGraphic);
-                System.out.println("previewView width = " + previewView.getWidth());
-                System.out.println("previewView height = " + previewView.getHeight());
                 faceGraphic.updateFace(face);
             }
         }
@@ -322,7 +325,7 @@ public class CameraXActivity extends MainActivity {
 
     // print the biggest classification probability and its corresponding index
     private String getClassification(float[] floatArray, List<String> labels){
-        DecimalFormat df = new DecimalFormat("0.00");
+        DecimalFormat df = new DecimalFormat("0");
         float maxValue = Integer.MIN_VALUE;
         int maxIndex = 0;
 
@@ -335,11 +338,10 @@ public class CameraXActivity extends MainActivity {
             index++;
         }
 
-        String finalResult = "The face is '" + labels.get(maxIndex) + "' with " +
-                "classification " + "value of " + df.format(maxValue*100) + " %";
+        String finalResult = labels.get(maxIndex) + ": " + df.format(maxValue*100) + "%";
 
         cameraXText.setText(finalResult);
-        return labels.get(maxIndex);
+        return finalResult;
     }
 
     // onClick function to allow user to return to MainActivity
